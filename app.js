@@ -193,7 +193,6 @@ function exportXLSX() {
   const history = getHistory();
   if (history.length === 0) { showToast("Nenhum registro para exportar.", "error"); return; }
 
-  // Build rows
   const allItems = [
     ...ACESSOS.gerente.flatMap(s => s.itens),
     ...ACESSOS.vendedor.flatMap(s => s.itens)
@@ -218,16 +217,59 @@ function exportXLSX() {
     return [...base, ...itemCols];
   });
 
-  // Build CSV with BOM for Excel UTF-8
-  const escape = v => `"${String(v).replace(/"/g, '""')}"`;
-  const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(escape).join(",")).join("\r\n");
+  // Use SheetJS to create a real .xlsx
+  const wb = XLSX.utils.book_new();
+  const wsData = [headers, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "checklist_acessos.csv";
-  a.click(); URL.revokeObjectURL(url);
-  showToast("Exportado! Abra no Excel ✓", "success");
+  // Column widths
+  const colWidths = headers.map((h, i) => {
+    if (i === 0) return { wch: 12 };
+    if (i === 1) return { wch: 22 };
+    if (i === 2) return { wch: 20 };
+    if (i === 3) return { wch: 12 };
+    if (i === 4) return { wch: 16 };
+    if (i === 5) return { wch: 28 };
+    if (i === 6) return { wch: 13 };
+    if (i === 7) return { wch: 14 };
+    return { wch: 22 };
+  });
+  ws['!cols'] = colWidths;
+
+  // Freeze header row
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+  XLSX.utils.book_append_sheet(wb, ws, "Registros");
+
+  // Summary sheet
+  const totalRegistros = history.length;
+  const totalGerentes = history.filter(r => r.tipo === "gerente").length;
+  const totalVendedores = history.filter(r => r.tipo === "vendedor").length;
+  const mediaConc = history.length
+    ? Math.round(history.reduce((acc, r) => acc + (r.totalItens ? r.done / r.totalItens * 100 : 0), 0) / history.length)
+    : 0;
+  const totalCompletos = history.filter(r => r.totalItens && r.done === r.totalItens).length;
+
+  const summaryData = [
+    ["📊 Resumo do Histórico", ""],
+    ["", ""],
+    ["Total de registros", totalRegistros],
+    ["Gerentes", totalGerentes],
+    ["Vendedores", totalVendedores],
+    ["", ""],
+    ["Média de conclusão", mediaConc + "%"],
+    ["Checklists 100% completos", totalCompletos],
+    ["", ""],
+    ["Gerado em", new Date().toLocaleString("pt-BR")],
+  ];
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  wsSummary['!cols'] = [{ wch: 28 }, { wch: 18 }];
+  XLSX.utils.book_append_sheet(wb, wsSummary, "Resumo");
+
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`;
+  XLSX.writeFile(wb, `checklist_acessos_${stamp}.xlsx`);
+  showToast("Exportado em .xlsx ✓", "success");
 }
 
 let toastTimer;
