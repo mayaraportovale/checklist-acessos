@@ -2,44 +2,21 @@ const ACESSOS = {
   gerente: [
     {
       secao: "Grupos",
-      itens: [
-        "Grupo Comunicados",
-        "Grupo Porto Vale",
-        "Grupo Pendências",
-        "Grupo NPS",
-        "Grupo Gerentes",
-        "Grupo Sistema – Clauser"
-      ]
+      itens: ["Grupo Comunicados","Grupo Porto Vale","Grupo Pendências","Grupo NPS","Grupo Gerentes","Grupo Sistema – Clauser"]
     },
     {
       secao: "Sistemas e Acessos",
-      itens: [
-        "Inadimplentes",
-        "Ololu",
-        "Click Play",
-        "Acesso NPS",
-        "Acesso ao Sys Control",
-        "Portal",
-        "Power BI",
-        "Corretor Online"
-      ]
+      itens: ["Inadimplentes","Ololu","Click Play","Acesso NPS","Acesso ao Sys Control","Portal","Power BI","Corretor Online"]
     }
   ],
   vendedor: [
     {
       secao: "Grupos",
-      itens: [
-        "Grupo Comunicados",
-        "Grupo Porto Vale"
-      ]
+      itens: ["Grupo Comunicados","Grupo Porto Vale"]
     },
     {
       secao: "Sistemas e Acessos",
-      itens: [
-        "Ololu",
-        "COL",
-        "Portal"
-      ]
+      itens: ["Ololu","COL","Portal"]
     }
   ]
 };
@@ -58,37 +35,27 @@ function selectType(type) {
 
 function renderChecklist() {
   const area = document.getElementById("checklist-area");
-  const data = ACESSOS[currentType];
   area.innerHTML = "";
-
-  data.forEach(({ secao, itens }) => {
+  ACESSOS[currentType].forEach(({ secao, itens }) => {
     const section = document.createElement("div");
     section.className = "checklist-section";
-
     const title = document.createElement("h4");
     title.textContent = secao;
     section.appendChild(title);
-
     const itemsDiv = document.createElement("div");
     itemsDiv.className = "checklist-items";
-
     itens.forEach(item => {
       const key = `${currentType}__${item}`;
       const div = document.createElement("div");
       div.className = "check-item" + (checkedItems[key] ? " checked" : "");
       div.onclick = () => toggleItem(key, div);
-
       div.innerHTML = `
         <div class="check-box">
-          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#0d0f14" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="2 6 5 9 10 3"/>
-          </svg>
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#0d0f14" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>
         </div>
-        <span class="check-label">${item}</span>
-      `;
+        <span class="check-label">${item}</span>`;
       itemsDiv.appendChild(div);
     });
-
     section.appendChild(itemsDiv);
     area.appendChild(section);
   });
@@ -104,16 +71,14 @@ function updateProgress() {
   const total = ACESSOS[currentType].reduce((acc, s) => acc + s.itens.length, 0);
   const done = Object.values(checkedItems).filter(Boolean).length;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-
   document.getElementById("progress-fill").style.width = pct + "%";
   document.getElementById("progress-label").textContent = `${done} / ${total}`;
 }
 
 function clearForm() {
   checkedItems = {};
-  document.getElementById("nome").value = "";
-  document.getElementById("responsavel").value = "";
-  document.getElementById("data").value = "";
+  ["nome","responsavel","obs"].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+  document.getElementById("data").value = new Date().toISOString().split("T")[0];
   document.getElementById("motivo").value = "";
   renderChecklist();
   updateProgress();
@@ -121,110 +86,87 @@ function clearForm() {
 
 function saveRecord() {
   const nome = document.getElementById("nome").value.trim();
-  const responsavel = document.getElementById("responsavel").value.trim();
   const data = document.getElementById("data").value;
-  const motivo = document.getElementById("motivo").value;
-
   if (!nome) { showToast("Informe o nome do colaborador.", "error"); return; }
   if (!data) { showToast("Informe a data.", "error"); return; }
 
-  const totalItens = ACESSOS[currentType].reduce((acc, s) => acc + s.itens.length, 0);
+  const total = ACESSOS[currentType].reduce((acc, s) => acc + s.itens.length, 0);
   const done = Object.values(checkedItems).filter(Boolean).length;
 
   const record = {
     id: Date.now(),
     tipo: currentType,
     nome,
-    responsavel,
+    responsavel: document.getElementById("responsavel").value.trim(),
     data,
-    motivo,
-    totalItens,
+    motivo: document.getElementById("motivo").value,
+    obs: document.getElementById("obs").value.trim(),
+    totalItens: total,
     done,
     itens: {}
   };
-
   ACESSOS[currentType].forEach(({ itens }) => {
-    itens.forEach(item => {
-      const key = `${currentType}__${item}`;
-      record.itens[item] = !!checkedItems[key];
-    });
+    itens.forEach(item => { record.itens[item] = !!checkedItems[`${currentType}__${item}`]; });
   });
 
   const history = getHistory();
   history.unshift(record);
   localStorage.setItem("checklist_history", JSON.stringify(history));
-
-  showToast("Registro salvo com sucesso! ✓", "success");
+  showToast("Registro salvo! ✓", "success");
   clearForm();
 }
 
 function getHistory() {
-  try {
-    return JSON.parse(localStorage.getItem("checklist_history")) || [];
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem("checklist_history")) || []; }
+  catch { return []; }
 }
 
 function clearHistory() {
-  if (!confirm("Tem certeza que deseja apagar todo o histórico?")) return;
+  if (!confirm("Apagar todo o histórico?")) return;
   localStorage.removeItem("checklist_history");
   renderHistory();
-  showToast("Histórico apagado.", "");
+  showToast("Histórico apagado.");
 }
 
 function renderHistory() {
   const list = document.getElementById("history-list");
   const history = getHistory();
-
   if (history.length === 0) {
     list.innerHTML = '<div class="history-empty">Nenhum registro salvo ainda.</div>';
     return;
   }
-
   list.innerHTML = history.map(r => {
     const pct = r.totalItens === 0 ? 0 : Math.round((r.done / r.totalItens) * 100);
-    const badgeClass = r.tipo === "gerente" ? "badge-gerente" : "badge-vendedor";
-    const pctClass = pct === 100 ? "" : "partial";
     const dataFmt = r.data ? new Date(r.data + "T12:00:00").toLocaleDateString("pt-BR") : "—";
-    const motivo = r.motivo || "—";
     return `
       <div class="history-card" onclick="openModal(${r.id})">
-        <span class="history-badge ${badgeClass}">${r.tipo}</span>
+        <span class="history-badge badge-${r.tipo}">${r.tipo}</span>
         <div class="history-info">
           <div class="history-name">${r.nome}</div>
-          <div class="history-meta">${dataFmt} · ${motivo}${r.responsavel ? " · " + r.responsavel : ""}</div>
+          <div class="history-meta">${dataFmt}${r.motivo ? " · " + r.motivo : ""}${r.responsavel ? " · " + r.responsavel : ""}</div>
         </div>
         <div class="history-progress">
-          <div class="history-pct ${pctClass}">${pct}%</div>
+          <div class="history-pct ${pct === 100 ? "" : "partial"}">${pct}%</div>
           <div class="history-pct-label">${r.done}/${r.totalItens} itens</div>
         </div>
-      </div>
-    `;
+      </div>`;
   }).join("");
 }
 
 function openModal(id) {
-  const history = getHistory();
-  const r = history.find(x => x.id === id);
+  const r = getHistory().find(x => x.id === id);
   if (!r) return;
-
   const dataFmt = r.data ? new Date(r.data + "T12:00:00").toLocaleDateString("pt-BR") : "—";
   const pct = r.totalItens === 0 ? 0 : Math.round((r.done / r.totalItens) * 100);
-
   document.getElementById("modal-title").textContent = r.nome;
-
   const sections = ACESSOS[r.tipo];
-  let itemsHtml = sections.map(({ secao, itens }) => `
+  const itemsHtml = sections.map(({ secao, itens }) => `
     <div class="modal-section-title">${secao}</div>
     ${itens.map(item => `
       <div class="modal-item">
         <span class="dot ${r.itens[item] ? "dot-ok" : "dot-no"}"></span>
-        <span style="color: ${r.itens[item] ? "var(--text)" : "var(--text3)"}; ${r.itens[item] ? "" : "text-decoration:line-through"}">${item}</span>
-      </div>
-    `).join("")}
-  `).join("");
-
+        <span style="color:${r.itens[item] ? "var(--text)" : "var(--text3)"};${r.itens[item] ? "" : "text-decoration:line-through"}">${item}</span>
+      </div>`).join("")}`).join("");
   document.getElementById("modal-body").innerHTML = `
     <div class="modal-meta">
       <div class="modal-meta-item"><label>Tipo</label><span style="text-transform:capitalize">${r.tipo}</span></div>
@@ -232,16 +174,13 @@ function openModal(id) {
       <div class="modal-meta-item"><label>Responsável</label><span>${r.responsavel || "—"}</span></div>
       <div class="modal-meta-item"><label>Motivo</label><span>${r.motivo || "—"}</span></div>
       <div class="modal-meta-item"><label>Conclusão</label><span style="color:${pct===100?"var(--green)":"var(--amber)"};font-weight:600">${pct}% (${r.done}/${r.totalItens})</span></div>
+      ${r.obs ? `<div class="modal-meta-item" style="grid-column:span 2"><label>Observações</label><span>${r.obs}</span></div>` : ""}
     </div>
-    ${itemsHtml}
-  `;
-
+    ${itemsHtml}`;
   document.getElementById("modal-overlay").classList.remove("hidden");
 }
 
-function closeModal() {
-  document.getElementById("modal-overlay").classList.add("hidden");
-}
+function closeModal() { document.getElementById("modal-overlay").classList.add("hidden"); }
 
 function showPage(page) {
   document.getElementById("page-form").classList.toggle("hidden", page !== "form");
@@ -249,19 +188,58 @@ function showPage(page) {
   if (page === "history") renderHistory();
 }
 
+// ─── XLSX EXPORT ─────────────────────────────────────────────────────────────
+function exportXLSX() {
+  const history = getHistory();
+  if (history.length === 0) { showToast("Nenhum registro para exportar.", "error"); return; }
+
+  // Build rows
+  const allItems = [
+    ...ACESSOS.gerente.flatMap(s => s.itens),
+    ...ACESSOS.vendedor.flatMap(s => s.itens)
+  ];
+  const uniqueItems = [...new Set(allItems)];
+
+  const headers = ["Tipo","Nome","Responsável","Data","Motivo","Observações","Concluído (%)","Itens OK / Total",...uniqueItems];
+
+  const rows = history.map(r => {
+    const dataFmt = r.data ? new Date(r.data + "T12:00:00").toLocaleDateString("pt-BR") : "";
+    const pct = r.totalItens === 0 ? 0 : Math.round((r.done / r.totalItens) * 100);
+    const base = [
+      r.tipo.charAt(0).toUpperCase() + r.tipo.slice(1),
+      r.nome, r.responsavel || "", dataFmt,
+      r.motivo || "", r.obs || "",
+      pct + "%", `${r.done}/${r.totalItens}`
+    ];
+    const itemCols = uniqueItems.map(item => {
+      if (r.itens[item] === undefined) return "N/A";
+      return r.itens[item] ? "✓" : "✗";
+    });
+    return [...base, ...itemCols];
+  });
+
+  // Build CSV with BOM for Excel UTF-8
+  const escape = v => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(escape).join(",")).join("\r\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "checklist_acessos.csv";
+  a.click(); URL.revokeObjectURL(url);
+  showToast("Exportado! Abra no Excel ✓", "success");
+}
+
 let toastTimer;
 function showToast(msg, type) {
   const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className = "toast" + (type ? " " + type : "");
+  t.textContent = msg; t.className = "toast" + (type ? " " + type : "");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.classList.add("hidden"); }, 2800);
+  toastTimer = setTimeout(() => t.classList.add("hidden"), 2800);
 }
 
-// Init
 document.addEventListener("DOMContentLoaded", () => {
-  const today = new Date().toISOString().split("T")[0];
-  document.getElementById("data").value = today;
+  document.getElementById("data").value = new Date().toISOString().split("T")[0];
   renderChecklist();
   updateProgress();
 });
