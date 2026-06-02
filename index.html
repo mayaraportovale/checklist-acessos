@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checklist de Acessos — Porto Vale</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">✦</span>
+        <span class="logo-text">Porto Vale</span>
+      </div>
+      <div class="header-title">Checklist de Acessos</div>
+      <button class="btn-history" onclick="showPage('history')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Histórico
+      </button>
+    </div>
+  </header>
+
+  <!-- PAGE: FORM -->
+  <main id="page-form">
+    <section class="hero">
+      <p class="hero-sub">Selecione o tipo de colaborador para iniciar o checklist de encerramento de acessos.</p>
+    </section>
+
+    <div class="type-selector">
+      <button class="type-btn active" id="btn-gerente" onclick="selectType('gerente')">
+        <span class="type-icon">👔</span>
+        <span class="type-label">Gerente</span>
+        <span class="type-count">14 acessos</span>
+      </button>
+      <button class="type-btn" id="btn-vendedor" onclick="selectType('vendedor')">
+        <span class="type-icon">🤝</span>
+        <span class="type-label">Vendedor</span>
+        <span class="type-count">5 acessos</span>
+      </button>
+    </div>
+
+    <div class="form-card">
+      <div class="form-meta">
+        <div class="field">
+          <label>Nome do colaborador</label>
+          <input type="text" id="nome" placeholder="Ex: João Silva" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Responsável pelo encerramento</label>
+          <input type="text" id="responsavel" placeholder="Ex: Maria Gestão" autocomplete="off" />
+        </div>
+        <div class="field field-sm">
+          <label>Data</label>
+          <input type="date" id="data" />
+        </div>
+        <div class="field field-sm">
+          <label>Motivo</label>
+          <select id="motivo">
+            <option value="">Selecione</option>
+            <option>Desligamento</option>
+            <option>Transferência</option>
+            <option>Licença</option>
+            <option>Outro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="checklist-area" id="checklist-area">
+        <!-- rendered by JS -->
+      </div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <span class="progress-label" id="progress-label">0 / 0</span>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-clear" onclick="clearForm()">Limpar tudo</button>
+        <button class="btn-save" onclick="saveRecord()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Salvar registro
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- PAGE: HISTORY -->
+  <main id="page-history" class="hidden">
+    <section class="hero">
+      <div class="hero-nav">
+        <button class="btn-back" onclick="showPage('form')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar
+        </button>
+        <h2>Histórico de registros</h2>
+        <button class="btn-danger-sm" onclick="clearHistory()">Limpar histórico</button>
+      </div>
+    </section>
+
+    <div id="history-list" class="history-list">
+      <!-- rendered by JS -->
+    </div>
+  </main>
+
+  <!-- MODAL -->
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modal-title"></h3>
+        <button onclick="closeModal()" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
