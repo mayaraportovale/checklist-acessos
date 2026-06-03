@@ -1,134 +1,248 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Checklist de Acessos — Porto Vale</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-
-<div class="bg-grid"></div>
+<div class="noise"></div>
 
 <header>
   <div class="header-inner">
     <div class="logo">
-      <span class="logo-icon">✦</span>
-      <span class="logo-text">Porto Vale</span>
+      <span class="logo-mark">PV</span>
+      <span class="logo-sep">/</span>
+      <span class="logo-title">Encerramento de Acessos</span>
     </div>
-    <div class="header-title">Checklist de Acessos</div>
-    <button class="btn-history" onclick="showPage('history')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Histórico
-    </button>
+    <nav class="header-nav">
+      <button class="nav-btn" onclick="goPanel()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Painel
+      </button>
+      <button class="nav-btn" onclick="goNew()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo
+      </button>
+    </nav>
   </div>
 </header>
 
-<!-- PAGE: FORM -->
-<main id="page-form">
+<!-- ══════════════════ WIZARD ══════════════════ -->
+<div id="view-wizard" class="view">
 
-  <div class="type-selector">
-    <button class="type-btn active" id="btn-gerente" onclick="selectType('gerente')">
-      <span class="type-icon">👔</span>
-      <div class="type-info">
-        <span class="type-label">Gerente</span>
-        <span class="type-count">14 acessos</span>
-      </div>
-    </button>
-    <button class="type-btn" id="btn-vendedor" onclick="selectType('vendedor')">
-      <span class="type-icon">🤝</span>
-      <div class="type-info">
-        <span class="type-label">Vendedor</span>
-        <span class="type-count">5 acessos</span>
-      </div>
-    </button>
+  <!-- STEP INDICATOR -->
+  <div class="steps-bar">
+    <div class="steps-inner">
+      <div class="step" id="si-1"><span class="step-num">1</span><span class="step-lbl">Tipo</span></div>
+      <div class="step-line"></div>
+      <div class="step" id="si-2"><span class="step-num">2</span><span class="step-lbl">Checklist</span></div>
+      <div class="step-line"></div>
+      <div class="step" id="si-3"><span class="step-num">3</span><span class="step-lbl">Revisão</span></div>
+      <div class="step-line"></div>
+      <div class="step" id="si-4"><span class="step-num">4</span><span class="step-lbl">Envio DP</span></div>
+    </div>
   </div>
 
-  <div class="form-card">
-    <div class="form-meta">
-      <div class="field">
-        <label>Nome do colaborador</label>
-        <input type="text" id="nome" placeholder="Ex: João Silva" autocomplete="off" />
+  <!-- STEP 1: tipo + nome colaborador -->
+  <section class="step-view active" id="step-1">
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-tag">Etapa 1</span>
+        <h2>Quem está sendo desligado?</h2>
+        <p>Informe os dados do colaborador e selecione o cargo.</p>
       </div>
-      <div class="field">
-        <label>Responsável</label>
-        <input type="text" id="responsavel" placeholder="Ex: Maria Gestão" autocomplete="off" />
+
+      <div class="form-grid">
+        <div class="field span2">
+          <label>Nome completo do colaborador</label>
+          <input type="text" id="s1-nome" placeholder="Ex: João Silva" autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label>Data</label>
+          <input type="date" id="s1-data"/>
+        </div>
+        <div class="field">
+          <label>Motivo</label>
+          <select id="s1-motivo">
+            <option value="">Selecione</option>
+            <option>Desligamento</option>
+            <option>Afastamento</option>
+          </select>
+        </div>
       </div>
-      <div class="field">
-        <label>Data</label>
-        <input type="date" id="data" />
+
+      <div class="type-cards">
+        <button class="type-card" id="tc-gerente" onclick="selectTipo('gerente')">
+          <span class="tc-emoji">👔</span>
+          <span class="tc-label">Gerente</span>
+          <span class="tc-count">14 acessos</span>
+        </button>
+        <button class="type-card" id="tc-vendedor" onclick="selectTipo('vendedor')">
+          <span class="tc-emoji">🤝</span>
+          <span class="tc-label">Vendedor</span>
+          <span class="tc-count">5 acessos</span>
+        </button>
       </div>
-      <div class="field">
-        <label>Motivo</label>
-        <select id="motivo">
-          <option value="">Selecione</option>
-          <option>Desligamento</option>
-          <option>Afastamento</option>
+
+      <div class="step-actions">
+        <button class="btn-primary" onclick="goStep2()">Continuar →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2: checklist colaborativo -->
+  <section class="step-view" id="step-2">
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-tag">Etapa 2</span>
+        <h2 id="s2-title">Checklist de acessos</h2>
+        <p id="s2-sub">Marque os acessos já encerrados. Itens marcados por outros aparecem destacados.</p>
+      </div>
+
+      <div class="collab-banner" id="collab-banner">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span id="collab-text">Carregando estado atual...</span>
+      </div>
+
+      <div class="resp-row">
+        <label class="resp-label">Quem está preenchendo agora?</label>
+        <select id="s2-resp" class="resp-select">
+          <option value="">Selecione seu nome</option>
         </select>
       </div>
-    </div>
 
-    <div class="divider"></div>
+      <div class="checklist-cols" id="s2-checklist"></div>
 
-    <div class="checklist-area" id="checklist-area"></div>
-
-    <div class="progress-bar-wrap">
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="progress-fill"></div>
+      <div class="progress-row">
+        <div class="prog-bar-bg"><div class="prog-bar-fill" id="s2-prog-fill"></div></div>
+        <span class="prog-label" id="s2-prog-label">0 / 0</span>
       </div>
-      <span class="progress-label" id="progress-label">0 / 0</span>
-    </div>
 
-    <div class="field" style="margin-bottom:16px">
-      <label>Observações</label>
-      <input type="text" id="obs" placeholder="Opcional..." autocomplete="off" />
+      <div class="step-actions">
+        <button class="btn-ghost" onclick="goStep(1)">← Voltar</button>
+        <button class="btn-primary" onclick="saveStep2()">Salvar e continuar →</button>
+      </div>
     </div>
+  </section>
 
-    <div class="form-actions">
-      <button class="btn-clear" onclick="clearForm()">Limpar</button>
-      <button class="btn-save" onclick="saveRecord()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        Salvar registro
+  <!-- STEP 3: revisão — só o preenchido -->
+  <section class="step-view" id="step-3">
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-tag">Etapa 3</span>
+        <h2>Revisão do preenchimento</h2>
+        <p>Apenas os itens já concluídos são exibidos abaixo.</p>
+      </div>
+
+      <div class="resp-row">
+        <label class="resp-label">Responsável pela revisão</label>
+        <select id="s3-resp" class="resp-select">
+          <option value="">Selecione seu nome</option>
+        </select>
+      </div>
+
+      <div id="s3-content"></div>
+
+      <div class="pending-box" id="s3-pending" style="display:none">
+        <div class="pending-title">⚠ Itens pendentes</div>
+        <div id="s3-pending-list"></div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn-ghost" onclick="goStep(2)">← Voltar</button>
+        <button class="btn-primary" onclick="goStep(4)">Confirmar e avançar →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 4: envio DP -->
+  <section class="step-view" id="step-4">
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-tag">Etapa 4</span>
+        <h2>Envio ao DP</h2>
+        <p>Confirme o envio da documentação ao Departamento Pessoal.</p>
+      </div>
+
+      <div class="resp-row">
+        <label class="resp-label">Responsável pelo envio</label>
+        <select id="s4-resp" class="resp-select">
+          <option value="">Selecione seu nome</option>
+        </select>
+      </div>
+
+      <div class="dp-toggle-card">
+        <div class="dp-toggle-info">
+          <div class="dp-toggle-title">Enviado ao DP?</div>
+          <div class="dp-toggle-sub" id="dp-status-text">Aguardando confirmação</div>
+        </div>
+        <button class="toggle-btn" id="dp-toggle" onclick="toggleDP()">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </button>
+      </div>
+
+      <div class="dp-date-row" id="dp-date-row" style="display:none">
+        <label>Data do envio</label>
+        <input type="date" id="s4-dp-data"/>
+        <input type="text" id="s4-dp-obs" placeholder="Observação (opcional)" autocomplete="off"/>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn-ghost" onclick="goStep(3)">← Voltar</button>
+        <button class="btn-export" onclick="exportXLSX()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar .xlsx
+        </button>
+        <button class="btn-primary btn-green" onclick="finalize()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Finalizar registro
+        </button>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /wizard -->
+
+<!-- ══════════════════ PAINEL ══════════════════ -->
+<div id="view-panel" class="view hidden">
+  <div class="panel-wrap">
+    <div class="panel-header">
+      <h2>Painel de registros</h2>
+      <button class="btn-export" onclick="exportAllXLSX()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar tudo
       </button>
     </div>
-  </div>
-</main>
 
-<!-- PAGE: HISTORY -->
-<main id="page-history" class="hidden">
-  <div class="hero-nav">
-    <button class="btn-back" onclick="showPage('form')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-      Voltar
-    </button>
-    <h2>Histórico de registros</h2>
-    <div class="hero-nav-actions">
-      <button class="btn-export" onclick="exportXLSX()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Exportar .xlsx
-      </button>
-      <button class="btn-danger-sm" onclick="clearHistory()">Limpar tudo</button>
-    </div>
+    <div class="panel-stats" id="panel-stats"></div>
+    <div class="panel-list" id="panel-list"></div>
   </div>
-  <div id="history-list" class="history-list"></div>
-</main>
+</div>
 
-<!-- MODAL -->
+<!-- MODAL DETALHE -->
 <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
   <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
+    <div class="modal-head">
       <h3 id="modal-title"></h3>
-      <button onclick="closeModal()" class="modal-close">✕</button>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
   </div>
 </div>
 
+<!-- LOADER -->
+<div id="loader" class="loader hidden">
+  <div class="loader-ring"></div>
+  <span id="loader-text">Salvando...</span>
+</div>
+
 <!-- TOAST -->
 <div id="toast" class="toast hidden"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
