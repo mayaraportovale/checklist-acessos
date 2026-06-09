@@ -532,72 +532,52 @@ window.switchTab = function(tab) {
   document.getElementById("page-history").classList.toggle("hidden", tab !== "history");
   if (tab === "history") renderHistory();
 };
-
-// ── ACESSOS ───────────────────────────────────────────────────────
+  
+// ── ACESSOS ──────────────────────────────────────────────────────────
 const ACESSOS = {
   gerente: [
-    { secao:"Grupos", itens:["Grupo Comunicados","Grupo Porto Vale","Grupo Pendências","Grupo NPS","Grupo Gerentes","Grupo Sistema – Clauser"] },
-    { secao:"Sistemas e Acessos", itens:["Inadimplentes","Ololu","Click Play","Acesso NPS","Acesso ao Sys Control","Portal","Power BI","Corretor Online","Blip"] }
+    {
+      secao: "Grupos",
+      itens: [
+        "Grupo Comunicados",
+        "Grupo Porto Vale",
+        "Grupo Pendências",
+        "Grupo NPS",
+        "Grupo Gerentes",
+        "Grupo Sistema – Clauser"
+      ]
+    },
+    {
+      secao: "Sistemas e Acessos",
+      itens: [
+        "Inadimplentes",
+        "Ololu",
+        "Click Play",
+        "Acesso NPS",
+        "Acesso ao Sys Control",
+        "Power BI",
+        "Corretor Online"
+      ]
+    }
   ],
+
   vendedor: [
-    { secao:"Grupos", itens:["Grupo Comunicados","Grupo Porto Vale"] },
-    { secao:"Sistemas e Acessos", itens:["Ololu","COL","Portal","Blip"] }
+    {
+      secao: "Grupos",
+      itens: [
+        "Grupo Comunicados",
+        "Grupo Porto Vale"
+      ]
+    },
+    {
+      secao: "Sistemas e Acessos",
+      itens: [
+        "Ololu",
+        "COL"
+      ]
+    }
   ]
 };
-let currentType = "gerente";
-let checkedItems = {};
-let cachedHistory = [];
-
-window.selectType = function(type) {
-  currentType = type; checkedItems = {};
-  document.getElementById("btn-gerente").classList.toggle("active", type === "gerente");
-  document.getElementById("btn-vendedor").classList.toggle("active", type === "vendedor");
-  renderChecklist(); updateProgress();
-};
-
-function renderChecklist() {
-  const area = document.getElementById("checklist-area");
-  area.innerHTML = "";
-  ACESSOS[currentType].forEach(({ secao, itens }) => {
-    const sec = document.createElement("div"); sec.className = "checklist-section";
-    const h4 = document.createElement("h4"); h4.textContent = secao; sec.appendChild(h4);
-    const div = document.createElement("div"); div.className = "checklist-items";
-    itens.forEach(item => {
-      const key = currentType + "__" + item;
-      const el = document.createElement("div");
-      el.className = "check-item" + (checkedItems[key] ? " checked" : "");
-      el.onclick = () => toggleItem(key, el);
-      el.innerHTML = `<div class="check-box"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg></div><span class="check-label">${item}</span>`;
-      div.appendChild(el);
-    });
-    sec.appendChild(div); area.appendChild(sec);
-  });
-}
-
-function toggleItem(key, el) {
-  checkedItems[key] = !checkedItems[key];
-  el.classList.toggle("checked", checkedItems[key]);
-  updateProgress();
-}
-
-function updateProgress() {
-  const total = ACESSOS[currentType].reduce((a,s) => a + s.itens.length, 0);
-  const done = Object.values(checkedItems).filter(Boolean).length;
-  const pct = total === 0 ? 0 : Math.round((done/total)*100);
-  document.getElementById("progress-fill").style.width = pct + "%";
-  document.getElementById("progress-label").textContent = done + " / " + total;
-  document.getElementById("progress-pct").textContent = pct + "%";
-}
-
-window.clearForm = function() {
-  checkedItems = {};
-  ["nome","obs"].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
-  document.getElementById("responsavel").value = "";
-  document.getElementById("data").value = new Date().toISOString().split("T")[0];
-  document.getElementById("motivo").value = "";
-  renderChecklist(); updateProgress();
-};
-
 // ── SAVE ──────────────────────────────────────────────────────────
 window.saveRecord = async function() {
   const nome = document.getElementById("nome").value.trim();
