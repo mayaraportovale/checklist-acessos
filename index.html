@@ -1,248 +1,932 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Checklist de Acessos — Porto Vale</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#f5f4f0; --bg2:#ffffff; --bg3:#eceae4; --bg4:#e2e0d8;
+      --border:#d8d6ce; --border2:#c4c2b8;
+      --text:#1a1916; --text2:#5a5850; --text3:#9a9890;
+      --accent:#1a3a2a; --accent2:#2d6248; --accent3:#4a9470; --accent-lt:#e8f2ed;
+      --amber:#c47a1a; --amber-lt:#fdf3e3;
+      --red:#c0392b; --red-lt:#fdecea;
+      --green:#1e7a4a; --green-lt:#e6f4ec;
+      --radius:14px; --radius-sm:8px;
+      --shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06);
+      --shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+      --font:'Sora',sans-serif; --mono:'JetBrains Mono',monospace;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+    .hidden { display: none !important; }
+
+    /* LOGIN */
+    #login-page { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--accent); background-image:radial-gradient(ellipse at 30% 70%,rgba(74,148,112,0.3) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(45,98,72,0.4) 0%,transparent 55%); }
+    .login-card { background:#fff; border-radius:20px; padding:48px 44px; width:100%; max-width:400px; box-shadow:0 24px 64px rgba(0,0,0,0.25); }
+    .login-logo { display:flex; align-items:center; gap:10px; margin-bottom:32px; }
+    .login-logo-mark { width:36px; height:36px; background:var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center; }
+    .login-logo-mark svg { color:#fff; }
+    .login-logo-text { font-size:15px; font-weight:700; color:var(--text); letter-spacing:-0.02em; }
+    .login-logo-sub { font-size:11px; color:var(--text3); font-weight:400; display:block; }
+    .login-title { font-size:22px; font-weight:700; color:var(--text); margin-bottom:6px; letter-spacing:-0.03em; }
+    .login-sub { font-size:13px; color:var(--text2); margin-bottom:28px; }
+    .login-field { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+    .login-field label { font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.08em; }
+    .login-field input { background:var(--bg); border:1.5px solid var(--border); color:var(--text); font-family:var(--font); font-size:14px; padding:11px 14px; border-radius:var(--radius-sm); outline:none; transition:border-color 0.18s,box-shadow 0.18s; }
+    .login-field input:focus { border-color:var(--accent3); box-shadow:0 0 0 3px rgba(74,148,112,0.15); }
+    .login-error { font-size:12px; color:var(--red); background:var(--red-lt); border:1px solid rgba(192,57,43,0.2); border-radius:8px; padding:8px 12px; margin-bottom:12px; display:none; }
+    .login-error.show { display:block; }
+    .btn-login { width:100%; background:var(--accent); color:#fff; border:none; font-family:var(--font); font-size:14px; font-weight:600; padding:13px; border-radius:var(--radius-sm); cursor:pointer; transition:background 0.18s,transform 0.15s; margin-top:4px; }
+    .btn-login:hover { background:var(--accent2); transform:translateY(-1px); }
+    .btn-login:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+    .login-loading { font-size:11px; color:var(--text3); text-align:center; margin-top:14px; display:none; align-items:center; justify-content:center; gap:8px; }
+    .login-loading.show { display:flex; }
+
+    /* APP */
+    #app-page { display:none; }
+    #app-page.show { display:block; }
+
+    /* HEADER */
+    header { position:sticky; top:0; z-index:100; background:rgba(245,244,240,0.92); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+    .header-inner { max-width:820px; margin:0 auto; padding:13px 24px; display:flex; align-items:center; gap:16px; }
+    .logo { display:flex; align-items:center; gap:9px; }
+    .logo-mark { width:28px; height:28px; background:var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .logo-mark svg { color:#fff; }
+    .logo-text { font-size:13px; font-weight:700; color:var(--text); letter-spacing:-0.02em; }
+    .header-title { flex:1; text-align:center; font-size:12px; font-weight:500; color:var(--text3); letter-spacing:0.04em; text-transform:uppercase; }
+    .header-actions { display:flex; align-items:center; gap:8px; }
+    .user-chip { display:flex; align-items:center; gap:7px; background:var(--bg3); border:1px solid var(--border); border-radius:99px; padding:4px 10px 4px 4px; font-size:12px; color:var(--text2); }
+    .user-avatar { width:22px; height:22px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; font-weight:700; }
+    .btn-logout { background:none; border:none; color:var(--text3); font-size:11px; cursor:pointer; padding:2px 6px; border-radius:4px; font-family:var(--font); transition:color 0.15s; }
+    .btn-logout:hover { color:var(--red); }
+
+    /* FB STATUS */
+    .fb-status { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:500; padding:4px 10px; border-radius:99px; }
+    .fb-status.ok { background:var(--green-lt); color:var(--green); }
+    .fb-status.err { background:var(--red-lt); color:var(--red); }
+    .fb-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+    /* MAIN */
+    main { max-width:820px; margin:0 auto; padding:24px 24px 60px; position:relative; }
+
+    /* TABS */
+    .tabs { display:flex; gap:4px; background:var(--bg3); border:1px solid var(--border); padding:4px; border-radius:var(--radius-sm); margin-bottom:24px; }
+    .tab-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px 16px; border-radius:6px; border:none; background:none; font-family:var(--font); font-size:13px; font-weight:500; color:var(--text2); cursor:pointer; transition:all 0.18s; }
+    .tab-btn:hover { color:var(--text); }
+    .tab-btn.active { background:var(--bg2); color:var(--text); box-shadow:var(--shadow); }
+    .tab-btn .tab-count { font-size:10px; background:var(--accent-lt); color:var(--accent2); border-radius:99px; padding:2px 7px; font-family:var(--mono); font-weight:500; }
+
+    /* FORM */
+    .type-selector { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+    .type-btn { display:flex; align-items:center; gap:13px; padding:16px 18px; background:var(--bg2); border:1.5px solid var(--border); border-radius:var(--radius); cursor:pointer; transition:all 0.2s; font-family:var(--font); box-shadow:var(--shadow); }
+    .type-btn:hover { border-color:var(--border2); }
+    .type-btn.active { border-color:var(--accent3); background:var(--accent-lt); box-shadow:0 0 0 3px rgba(74,148,112,0.1); }
+    .type-icon { font-size:24px; }
+    .type-info { display:flex; flex-direction:column; gap:1px; text-align:left; }
+    .type-label { font-size:14px; font-weight:600; color:var(--text); }
+    .type-count { font-size:11px; color:var(--text3); font-family:var(--mono); }
+    .type-btn.active .type-count { color:var(--accent3); }
+    .form-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; box-shadow:var(--shadow); }
+    .form-meta { display:grid; grid-template-columns:1fr 1fr 148px 168px; gap:14px; margin-bottom:22px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .field label { font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.08em; }
+    .field input,.field select,.field textarea { background:var(--bg); border:1.5px solid var(--border); color:var(--text); font-family:var(--font); font-size:13px; padding:9px 12px; border-radius:var(--radius-sm); outline:none; width:100%; transition:border-color 0.18s,box-shadow 0.18s; }
+    .field input:focus,.field select:focus,.field textarea:focus { border-color:var(--accent3); box-shadow:0 0 0 3px rgba(74,148,112,0.12); }
+    .field input::placeholder { color:var(--text3); }
+    .field select option { background:#fff; }
+    .field textarea { resize:vertical; min-height:60px; }
+    .section-divider { display:flex; align-items:center; gap:12px; margin:20px 0 16px; }
+    .section-divider span { font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:0.1em; white-space:nowrap; }
+    .section-divider::before,.section-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    .checklist-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 32px; margin-bottom:20px; }
+    .checklist-section h4 { font-size:10px; font-weight:700; color:var(--accent2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px; padding-left:2px; }
+    .checklist-items { display:flex; flex-direction:column; gap:3px; }
+    .check-item { display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:var(--radius-sm); cursor:pointer; transition:background 0.15s; border:1px solid transparent; user-select:none; }
+    .check-item:hover { background:var(--bg3); border-color:var(--border); }
+    .check-item.checked { background:var(--green-lt); border-color:rgba(30,122,74,0.2); }
+    .check-box { width:17px; height:17px; flex-shrink:0; border:1.5px solid var(--border2); border-radius:5px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; background:#fff; }
+    .check-item.checked .check-box { background:var(--green); border-color:var(--green); }
+    .check-box svg { display:none; }
+    .check-item.checked .check-box svg { display:block; }
+    .check-label { font-size:13px; color:var(--text); transition:color 0.15s; }
+    .check-item.checked .check-label { color:var(--text3); text-decoration:line-through; }
+    .progress-wrap { display:flex; align-items:center; gap:12px; margin-bottom:20px; padding:12px 14px; background:var(--bg); border-radius:var(--radius-sm); border:1px solid var(--border); }
+    .progress-bar-bg { flex:1; height:6px; background:var(--bg4); border-radius:99px; overflow:hidden; }
+    .progress-bar-fill { height:100%; background:linear-gradient(90deg,var(--accent3),var(--green)); border-radius:99px; transition:width 0.35s ease; width:0%; }
+    .progress-label { font-size:12px; color:var(--text2); font-family:var(--mono); min-width:52px; text-align:right; }
+    .progress-pct { font-size:13px; font-weight:700; color:var(--accent2); font-family:var(--mono); min-width:38px; text-align:right; }
+    .form-actions { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .form-actions-right { display:flex; gap:10px; }
+    .btn-clear { background:transparent; border:1px solid var(--border); color:var(--text2); font-family:var(--font); font-size:13px; padding:10px 20px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.18s; }
+    .btn-clear:hover { color:var(--text); border-color:var(--border2); background:var(--bg3); }
+    .btn-image { display:flex; align-items:center; gap:7px; background:var(--bg3); border:1px solid var(--border2); color:var(--text2); font-family:var(--font); font-size:13px; font-weight:500; padding:10px 18px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.18s; }
+    .btn-image:hover { color:var(--accent2); border-color:var(--accent3); background:var(--accent-lt); }
+    .btn-save { display:flex; align-items:center; gap:7px; background:var(--accent); color:#fff; border:none; font-family:var(--font); font-size:13px; font-weight:600; padding:10px 22px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.18s; }
+    .btn-save:hover { background:var(--accent2); transform:translateY(-1px); }
+    .btn-save:disabled { opacity:0.55; cursor:not-allowed; transform:none; }
+
+    /* HISTORY */
+    .history-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:12px; flex-wrap:wrap; }
+    .history-toolbar-right { display:flex; align-items:center; gap:8px; }
+    .history-count { font-size:13px; color:var(--text2); font-family:var(--mono); }
+    .btn-export { display:flex; align-items:center; gap:7px; background:var(--green-lt); border:1.5px solid rgba(30,122,74,0.3); color:var(--green); font-family:var(--font); font-size:13px; font-weight:600; padding:9px 18px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.2s; }
+    .btn-export:hover { background:var(--green); color:#fff; border-color:var(--green); transform:translateY(-1px); }
+    .btn-danger { background:transparent; border:1px solid rgba(192,57,43,0.25); color:var(--red); font-family:var(--font); font-size:12px; padding:9px 14px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.18s; }
+    .btn-danger:hover { background:var(--red-lt); }
+    .history-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+    .stat-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; box-shadow:var(--shadow); }
+    .stat-value { font-size:22px; font-weight:700; color:var(--text); font-family:var(--mono); letter-spacing:-0.04em; }
+    .stat-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; margin-top:2px; font-weight:600; }
+    .history-list { display:flex; flex-direction:column; gap:8px; }
+    .history-empty { text-align:center; padding:60px 20px; color:var(--text3); font-size:14px; }
+    .history-loading { text-align:center; padding:40px 20px; color:var(--text2); font-size:13px; display:flex; align-items:center; justify-content:center; gap:10px; }
+    .spinner { width:16px; height:16px; border:2px solid var(--border2); border-top-color:var(--accent3); border-radius:50%; animation:spin 0.7s linear infinite; display:inline-block; flex-shrink:0; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .history-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:15px 18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all 0.18s; box-shadow:var(--shadow); }
+    .history-card:hover { border-color:var(--border2); transform:translateY(-1px); box-shadow:var(--shadow-lg); }
+    .history-badge { font-size:10px; font-weight:700; padding:4px 10px; border-radius:99px; flex-shrink:0; text-transform:uppercase; letter-spacing:0.07em; }
+    .badge-gerente { background:#e8f0ff; color:#1e4db7; border:1px solid rgba(30,77,183,0.2); }
+    .badge-vendedor { background:var(--green-lt); color:var(--green); border:1px solid rgba(30,122,74,0.2); }
+    .history-info { flex:1; min-width:0; }
+    .history-name { font-size:14px; font-weight:600; color:var(--text); }
+    .history-meta { font-size:11px; color:var(--text3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .history-right { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    .history-progress-bar-wrap { width:72px; }
+    .history-progress-mini { height:4px; background:var(--bg4); border-radius:99px; overflow:hidden; }
+    .history-progress-mini-fill { height:100%; border-radius:99px; transition:width 0.3s; }
+    .fill-ok { background:var(--green); } .fill-partial { background:var(--amber); }
+    .history-pct { font-size:16px; font-weight:700; font-family:var(--mono); letter-spacing:-0.04em; }
+    .pct-ok { color:var(--green); } .pct-partial { color:var(--amber); }
+    .history-pct-sub { font-size:10px; color:var(--text3); text-align:right; font-family:var(--mono); }
+    .btn-continue { display:flex; align-items:center; gap:6px; flex-shrink:0; background:var(--amber-lt); border:1.5px solid rgba(196,122,26,0.3); color:var(--amber); font-family:var(--font); font-size:11px; font-weight:600; padding:6px 12px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.18s; white-space:nowrap; }
+    .btn-continue:hover { background:var(--amber); color:#fff; border-color:var(--amber); }
+
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; z-index:200; background:rgba(26,25,22,0.55); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; }
+    .modal-overlay.hidden { display:none; }
+    .modal { background:var(--bg2); border:1px solid var(--border); border-radius:18px; width:100%; max-width:560px; max-height:86vh; overflow-y:auto; box-shadow:var(--shadow-lg); animation:modal-in 0.22s ease; }
+    @keyframes modal-in { from { opacity:0; transform:scale(0.96) translateY(10px); } to { opacity:1; } }
+    .modal-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg2); z-index:1; border-radius:18px 18px 0 0; }
+    .modal-header h3 { font-size:15px; font-weight:700; letter-spacing:-0.02em; }
+    .modal-close { background:var(--bg3); border:1px solid var(--border); color:var(--text2); font-size:14px; cursor:pointer; padding:5px 10px; border-radius:6px; transition:all 0.15s; }
+    .modal-close:hover { background:var(--bg4); color:var(--text); }
+    .modal-body { padding:20px 24px 24px; }
+    .modal-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+    .modal-meta-item { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 13px; }
+    .modal-meta-item label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; font-weight:600; display:block; margin-bottom:3px; }
+    .modal-meta-item span { font-size:13px; color:var(--text); font-weight:500; }
+    .modal-section-title { font-size:10px; font-weight:700; color:var(--accent2); text-transform:uppercase; letter-spacing:0.1em; margin:16px 0 8px; }
+    .modal-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+    .modal-item:last-child { border-bottom:none; }
+    .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .dot-ok { background:var(--green); } .dot-no { background:var(--text3); }
+    .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
+    .btn-modal-image { display:flex; align-items:center; gap:7px; background:var(--accent-lt); border:1.5px solid rgba(74,148,112,0.3); color:var(--accent2); font-family:var(--font); font-size:12px; font-weight:600; padding:8px 16px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.18s; }
+    .btn-modal-image:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+    /* PRINT FRAME */
+    #print-frame { position:fixed; left:-9999px; top:0; width:760px; background:#fff; font-family:var(--font); padding:40px 44px; border-radius:16px; }
+    .pf-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; padding-bottom:20px; border-bottom:2px solid var(--accent); }
+    .pf-logo { display:flex; align-items:center; gap:10px; }
+    .pf-logo-mark { width:40px; height:40px; background:var(--accent); border-radius:11px; display:flex; align-items:center; justify-content:center; }
+    .pf-brand { font-size:17px; font-weight:700; color:var(--accent); letter-spacing:-0.02em; }
+    .pf-brand small { font-size:11px; color:var(--text3); font-weight:400; display:block; }
+    .pf-doc-info { text-align:right; }
+    .pf-doc-title { font-size:13px; font-weight:600; color:var(--text); }
+    .pf-doc-date { font-size:11px; color:var(--text3); margin-top:2px; }
+    .pf-meta-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:24px; }
+    .pf-meta-item { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+    .pf-meta-item label { font-size:9px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:3px; }
+    .pf-meta-item span { font-size:13px; color:var(--text); font-weight:600; }
+    .pf-progress-row { display:flex; align-items:center; gap:12px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:24px; }
+    .pf-progress-bar { flex:1; height:8px; background:var(--bg4); border-radius:99px; overflow:hidden; }
+    .pf-progress-fill { height:100%; border-radius:99px; }
+    .pf-progress-txt { font-family:var(--mono); font-size:13px; font-weight:700; white-space:nowrap; }
+    .pf-sections-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 32px; }
+    .pf-section-title { font-size:9px; font-weight:700; color:var(--accent2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px; padding-top:12px; }
+    .pf-item { display:flex; align-items:center; gap:9px; padding:7px 0; border-bottom:1px solid #f0ede8; font-size:12px; }
+    .pf-item:last-child { border-bottom:none; }
+    .pf-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .pf-obs { margin-top:20px; background:var(--amber-lt); border:1px solid rgba(196,122,26,0.2); border-radius:8px; padding:12px 14px; font-size:12px; color:var(--text2); }
+    .pf-obs strong { color:var(--amber); font-weight:700; display:block; margin-bottom:4px; font-size:10px; text-transform:uppercase; letter-spacing:0.07em; }
+    .pf-footer { margin-top:24px; padding-top:16px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+    .pf-footer span { font-size:10px; color:var(--text3); }
+    .pf-status-badge { font-size:11px; font-weight:700; padding:4px 12px; border-radius:99px; letter-spacing:0.05em; text-transform:uppercase; }
+    .pf-ok { background:var(--green-lt); color:var(--green); }
+    .pf-partial { background:var(--amber-lt); color:var(--amber); }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff; font-size:13px; font-weight:500; padding:11px 22px; border-radius:99px; z-index:400; animation:toast-in 0.25s ease; white-space:nowrap; box-shadow:0 4px 16px rgba(0,0,0,0.2); }
+    .toast.hidden { display:none; }
+    .toast.success { background:var(--green); }
+    .toast.error { background:var(--red); }
+    @keyframes toast-in { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+    @media (max-width:640px) {
+      .form-meta { grid-template-columns:1fr 1fr; }
+      .checklist-grid { grid-template-columns:1fr; }
+      .history-stats { grid-template-columns:1fr 1fr; }
+      .history-toolbar { flex-direction:column; align-items:flex-start; }
+      .header-title { display:none; }
+      .form-actions { flex-direction:column; }
+      .form-actions-right { width:100%; flex-direction:column; }
+      .history-right { flex-wrap:wrap; justify-content:flex-end; }
+    }
+  </style>
 </head>
 <body>
-<div class="noise"></div>
 
-<header>
-  <div class="header-inner">
-    <div class="logo">
-      <span class="logo-mark">PV</span>
-      <span class="logo-sep">/</span>
-      <span class="logo-title">Encerramento de Acessos</span>
-    </div>
-    <nav class="header-nav">
-      <button class="nav-btn" onclick="goPanel()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        Painel
-      </button>
-      <button class="nav-btn" onclick="goNew()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Novo
-      </button>
-    </nav>
-  </div>
-</header>
-
-<!-- ══════════════════ WIZARD ══════════════════ -->
-<div id="view-wizard" class="view">
-
-  <!-- STEP INDICATOR -->
-  <div class="steps-bar">
-    <div class="steps-inner">
-      <div class="step" id="si-1"><span class="step-num">1</span><span class="step-lbl">Tipo</span></div>
-      <div class="step-line"></div>
-      <div class="step" id="si-2"><span class="step-num">2</span><span class="step-lbl">Checklist</span></div>
-      <div class="step-line"></div>
-      <div class="step" id="si-3"><span class="step-num">3</span><span class="step-lbl">Revisão</span></div>
-      <div class="step-line"></div>
-      <div class="step" id="si-4"><span class="step-num">4</span><span class="step-lbl">Envio DP</span></div>
-    </div>
-  </div>
-
-  <!-- STEP 1: tipo + nome colaborador -->
-  <section class="step-view active" id="step-1">
-    <div class="step-card">
-      <div class="step-header">
-        <span class="step-tag">Etapa 1</span>
-        <h2>Quem está sendo desligado?</h2>
-        <p>Informe os dados do colaborador e selecione o cargo.</p>
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
       </div>
-
-      <div class="form-grid">
-        <div class="field span2">
-          <label>Nome completo do colaborador</label>
-          <input type="text" id="s1-nome" placeholder="Ex: João Silva" autocomplete="off"/>
-        </div>
-        <div class="field">
-          <label>Data</label>
-          <input type="date" id="s1-data"/>
-        </div>
-        <div class="field">
-          <label>Motivo</label>
-          <select id="s1-motivo">
-            <option value="">Selecione</option>
-            <option>Desligamento</option>
-            <option>Afastamento</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="type-cards">
-        <button class="type-card" id="tc-gerente" onclick="selectTipo('gerente')">
-          <span class="tc-emoji">👔</span>
-          <span class="tc-label">Gerente</span>
-          <span class="tc-count">14 acessos</span>
-        </button>
-        <button class="type-card" id="tc-vendedor" onclick="selectTipo('vendedor')">
-          <span class="tc-emoji">🤝</span>
-          <span class="tc-label">Vendedor</span>
-          <span class="tc-count">5 acessos</span>
-        </button>
-      </div>
-
-      <div class="step-actions">
-        <button class="btn-primary" onclick="goStep2()">Continuar →</button>
+      <div>
+        <div class="login-logo-text">Porto Vale</div>
+        <span class="login-logo-sub">Gestão de Acessos</span>
       </div>
     </div>
-  </section>
-
-  <!-- STEP 2: checklist colaborativo -->
-  <section class="step-view" id="step-2">
-    <div class="step-card">
-      <div class="step-header">
-        <span class="step-tag">Etapa 2</span>
-        <h2 id="s2-title">Checklist de acessos</h2>
-        <p id="s2-sub">Marque os acessos já encerrados. Itens marcados por outros aparecem destacados.</p>
-      </div>
-
-      <div class="collab-banner" id="collab-banner">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span id="collab-text">Carregando estado atual...</span>
-      </div>
-
-      <div class="resp-row">
-        <label class="resp-label">Quem está preenchendo agora?</label>
-        <select id="s2-resp" class="resp-select">
-          <option value="">Selecione seu nome</option>
-        </select>
-      </div>
-
-      <div class="checklist-cols" id="s2-checklist"></div>
-
-      <div class="progress-row">
-        <div class="prog-bar-bg"><div class="prog-bar-fill" id="s2-prog-fill"></div></div>
-        <span class="prog-label" id="s2-prog-label">0 / 0</span>
-      </div>
-
-      <div class="step-actions">
-        <button class="btn-ghost" onclick="goStep(1)">← Voltar</button>
-        <button class="btn-primary" onclick="saveStep2()">Salvar e continuar →</button>
-      </div>
+    <div class="login-title">Bem-vindo de volta</div>
+    <div class="login-sub">Faça login para continuar</div>
+    <div id="login-error" class="login-error"></div>
+    <div class="login-field"><label>Usuário</label><input type="text" id="login-user" placeholder="admin, rh ou gerencia" autocomplete="username" /></div>
+    <div class="login-field"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" /></div>
+    <button class="btn-login" id="btn-login">Entrar</button>
+    <div class="login-loading" id="login-loading">
+      <span class="spinner" style="width:13px;height:13px;border-color:rgba(0,0,0,0.15);border-top-color:var(--accent)"></span>
+      Entrando...
     </div>
-  </section>
-
-  <!-- STEP 3: revisão — só o preenchido -->
-  <section class="step-view" id="step-3">
-    <div class="step-card">
-      <div class="step-header">
-        <span class="step-tag">Etapa 3</span>
-        <h2>Revisão do preenchimento</h2>
-        <p>Apenas os itens já concluídos são exibidos abaixo.</p>
-      </div>
-
-      <div class="resp-row">
-        <label class="resp-label">Responsável pela revisão</label>
-        <select id="s3-resp" class="resp-select">
-          <option value="">Selecione seu nome</option>
-        </select>
-      </div>
-
-      <div id="s3-content"></div>
-
-      <div class="pending-box" id="s3-pending" style="display:none">
-        <div class="pending-title">⚠ Itens pendentes</div>
-        <div id="s3-pending-list"></div>
-      </div>
-
-      <div class="step-actions">
-        <button class="btn-ghost" onclick="goStep(2)">← Voltar</button>
-        <button class="btn-primary" onclick="goStep(4)">Confirmar e avançar →</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- STEP 4: envio DP -->
-  <section class="step-view" id="step-4">
-    <div class="step-card">
-      <div class="step-header">
-        <span class="step-tag">Etapa 4</span>
-        <h2>Envio ao DP</h2>
-        <p>Confirme o envio da documentação ao Departamento Pessoal.</p>
-      </div>
-
-      <div class="resp-row">
-        <label class="resp-label">Responsável pelo envio</label>
-        <select id="s4-resp" class="resp-select">
-          <option value="">Selecione seu nome</option>
-        </select>
-      </div>
-
-      <div class="dp-toggle-card">
-        <div class="dp-toggle-info">
-          <div class="dp-toggle-title">Enviado ao DP?</div>
-          <div class="dp-toggle-sub" id="dp-status-text">Aguardando confirmação</div>
-        </div>
-        <button class="toggle-btn" id="dp-toggle" onclick="toggleDP()">
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        </button>
-      </div>
-
-      <div class="dp-date-row" id="dp-date-row" style="display:none">
-        <label>Data do envio</label>
-        <input type="date" id="s4-dp-data"/>
-        <input type="text" id="s4-dp-obs" placeholder="Observação (opcional)" autocomplete="off"/>
-      </div>
-
-      <div class="step-actions">
-        <button class="btn-ghost" onclick="goStep(3)">← Voltar</button>
-        <button class="btn-export" onclick="exportXLSX()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exportar .xlsx
-        </button>
-        <button class="btn-primary btn-green" onclick="finalize()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Finalizar registro
-        </button>
-      </div>
-    </div>
-  </section>
-
-</div><!-- /wizard -->
-
-<!-- ══════════════════ PAINEL ══════════════════ -->
-<div id="view-panel" class="view hidden">
-  <div class="panel-wrap">
-    <div class="panel-header">
-      <h2>Painel de registros</h2>
-      <button class="btn-export" onclick="exportAllXLSX()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Exportar tudo
-      </button>
-    </div>
-
-    <div class="panel-stats" id="panel-stats"></div>
-    <div class="panel-list" id="panel-list"></div>
   </div>
 </div>
 
-<!-- MODAL DETALHE -->
-<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-head">
-      <h3 id="modal-title"></h3>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+<!-- APP -->
+<div id="app-page">
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <span class="logo-text">Porto Vale</span>
+      </div>
+      <div class="header-title">Checklist de Acessos</div>
+      <div class="header-actions">
+        <div id="fb-status-badge" class="fb-status" style="display:none"></div>
+        <div class="user-chip">
+          <div class="user-avatar" id="user-avatar">A</div>
+          <span id="user-name-chip">—</span>
+          <button class="btn-logout" id="btn-logout">Sair</button>
+        </div>
+      </div>
     </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-form">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Novo Registro
+      </button>
+      <button class="tab-btn" id="tab-history">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Histórico
+        <span class="tab-count" id="tab-hist-count">—</span>
+      </button>
+    </div>
+
+    <!-- FORM -->
+    <div id="page-form">
+      <div class="type-selector">
+        <button class="type-btn active" id="btn-gerente">
+          <span class="type-icon">👔</span>
+          <div class="type-info"><span class="type-label">Gerente</span><span class="type-count">14 acessos</span></div>
+        </button>
+        <button class="type-btn" id="btn-vendedor">
+          <span class="type-icon">🤝</span>
+          <div class="type-info"><span class="type-label">Vendedor</span><span class="type-count">5 acessos</span></div>
+        </button>
+      </div>
+      <div class="form-card">
+        <div class="form-meta">
+          <div class="field"><label>Nome do Colaborador</label><input type="text" id="nome" placeholder="Ex: João Silva" autocomplete="off" /></div>
+          <div class="field"><label>Preenchido por</label>
+            <select id="responsavel">
+              <option value="">Selecione</option>
+              <option>ABRAAO MOREIRA</option>
+              <option>ARTHUR BOMFIM</option>
+              <option>BRUNA PINHEIRO</option>
+              <option>FELIPE ALBACETE</option>
+              <option>LETICIA SUN</option>
+              <option>LUANA PEREIRA DE PAULA</option>
+              <option>MARCELO MOREIRA</option>
+              <option>MAYARA PAULINO</option>
+              <option>REGIANE PONCIANO</option>
+            </select>
+          </div>
+          <div class="field"><label>Data</label><input type="date" id="data" /></div>
+          <div class="field"><label>Motivo</label>
+            <select id="motivo">
+              <option value="">Selecione</option>
+              <option>Desligamento</option>
+              <option>Afastamento</option>
+              <option>Transferência</option>
+              <option>Outros</option>
+            </select>
+          </div>
+        </div>
+        <div class="section-divider"><span>Checklist de Acessos</span></div>
+        <div class="checklist-grid" id="checklist-area"></div>
+        <div class="progress-wrap">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+          <span class="progress-label" id="progress-label">0 / 0</span>
+          <span class="progress-pct" id="progress-pct">0%</span>
+        </div>
+        <div class="field" style="margin-bottom:20px">
+          <label>Observações</label>
+          <textarea id="obs" placeholder="Anotações adicionais (opcional)..." rows="2"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-clear" id="btn-clear">Limpar formulário</button>
+          <div class="form-actions-right">
+            <button class="btn-image" id="btn-image">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Salvar como imagem
+            </button>
+            <button class="btn-save" id="btn-save">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Salvar registro
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="page-history" class="hidden">
+      <div class="history-stats" id="history-stats" style="display:none">
+        <div class="stat-card"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total de registros</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-gerentes">0</div><div class="stat-label">Gerentes</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-vendedores">0</div><div class="stat-label">Vendedores</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-media">—</div><div class="stat-label">Conclusão média</div></div>
+      </div>
+      <div class="history-toolbar">
+        <span class="history-count" id="history-count-label"></span>
+        <div class="history-toolbar-right">
+          <button class="btn-export" id="btn-export">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar .xlsx
+          </button>
+          <button class="btn-danger" id="btn-danger">Limpar tudo</button>
+        </div>
+      </div>
+      <div id="history-list" class="history-list"></div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal" id="modal-box">
+    <div class="modal-header"><h3 id="modal-title"></h3><button id="modal-close-btn" class="modal-close">✕</button></div>
     <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
   </div>
 </div>
 
-<!-- LOADER -->
-<div id="loader" class="loader hidden">
-  <div class="loader-ring"></div>
-  <span id="loader-text">Salvando...</span>
-</div>
-
-<!-- TOAST -->
+<div id="print-frame" aria-hidden="true"></div>
 <div id="toast" class="toast hidden"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// ── CONFIG ────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyAWyvmJRevkAV2Eux2dSYGP5hFq-iYuXd4",
+  authDomain: "checklist-87b39.firebaseapp.com",
+  projectId: "checklist-87b39",
+  storageBucket: "checklist-87b39.firebasestorage.app",
+  messagingSenderId: "583742070100",
+  appId: "1:583742070100:web:74653e2ea6e08008673cc1"
+};
+const app  = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+const COL       = "checklist_registros";
+const COL_AUDIT = "checklist_auditoria";
+
+// ── AUTH ──────────────────────────────────────────────────────────
+const DISPLAY_NAMES = {
+  "admin@portovale.com":    "Administrador",
+  "rh@portovale.com":       "RH",
+  "gerencia@portovale.com": "Gerência"
+};
+let currentUser = null;
+
+function setLoginLoading(on) {
+  document.getElementById("btn-login").disabled = on;
+  document.getElementById("login-loading").style.display = on ? "flex" : "none";
+}
+
+window.doLogin = async function() {
+  const raw  = document.getElementById("login-user").value.trim();
+  const pass = document.getElementById("login-pass").value;
+  const errEl = document.getElementById("login-error");
+  errEl.classList.remove("show");
+  if (!raw || !pass) { errEl.textContent = "Preencha usuário e senha."; errEl.classList.add("show"); return; }
+  const email = raw.includes("@") ? raw : raw + "@portovale.com";
+  setLoginLoading(true);
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    setLoginLoading(false);
+    errEl.textContent = "Usuário ou senha incorretos.";
+    errEl.classList.add("show");
+  }
+};
+
+window.doLogout = async function() {
+  if (currentUser) audit("LOGOUT", `Usuário ${currentUser.displayName} saiu`);
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    const name = DISPLAY_NAMES[user.email] || user.displayName || user.email;
+    currentUser = { displayName: name, email: user.email };
+    setLoginLoading(false);
+    document.getElementById("login-error").classList.remove("show");
+    document.getElementById("login-page").style.display = "none";
+    document.getElementById("app-page").classList.add("show");
+    document.getElementById("user-name-chip").textContent = name;
+    document.getElementById("user-avatar").textContent = name.charAt(0).toUpperCase();
+    initFirebaseStatus();
+    audit("LOGIN", `Usuário ${name} entrou no sistema`);
+  } else {
+    currentUser = null;
+    document.getElementById("app-page").classList.remove("show");
+    document.getElementById("login-page").style.display = "flex";
+    document.getElementById("login-user").value = "";
+    document.getElementById("login-pass").value = "";
+  }
+});
+
+async function initFirebaseStatus() {
+  const badge = document.getElementById("fb-status-badge");
+  badge.style.display = "flex";
+  try {
+    await getDocs(query(collection(db, COL), limit(1)));
+    badge.className = "fb-status ok";
+    badge.innerHTML = '<div class="fb-dot"></div>Firebase';
+  } catch {
+    badge.className = "fb-status err";
+    badge.innerHTML = '<div class="fb-dot"></div>Offline';
+  }
+}
+
+// ── AUDITORIA ─────────────────────────────────────────────────────
+async function audit(acao, detalhe) {
+  try {
+    await addDoc(collection(db, COL_AUDIT), {
+      data_hora: new Date().toISOString(),
+      usuario: currentUser ? currentUser.displayName : "Sistema",
+      acao, detalhe
+    });
+  } catch(e) { /* silencioso */ }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  // Login
+  document.getElementById("btn-login").addEventListener("click", doLogin);
+  ["login-user","login-pass"].forEach(id => {
+    document.getElementById(id).addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+  });
+
+  // Logout
+  document.getElementById("btn-logout").addEventListener("click", doLogout);
+
+  // Tabs
+  document.getElementById("tab-form").addEventListener("click", () => switchTab("form"));
+  document.getElementById("tab-history").addEventListener("click", () => switchTab("history"));
+
+  // Tipo de colaborador
+  document.getElementById("btn-gerente").addEventListener("click", () => selectType("gerente"));
+  document.getElementById("btn-vendedor").addEventListener("click", () => selectType("vendedor"));
+
+  // Ações do formulário
+  document.getElementById("btn-clear").addEventListener("click", clearForm);
+  document.getElementById("btn-image").addEventListener("click", () => generateImage(null));
+  document.getElementById("btn-save").addEventListener("click", saveRecord);
+
+  // Histórico
+  document.getElementById("btn-export").addEventListener("click", exportXLSX);
+  document.getElementById("btn-danger").addEventListener("click", clearHistory);
+
+  // Modal
+  document.getElementById("modal-overlay").addEventListener("click", closeModal);
+  document.getElementById("modal-box").addEventListener("click", e => e.stopPropagation());
+  document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+
+  // Data padrão e checklist inicial
+  document.getElementById("data").value = new Date().toISOString().split("T")[0];
+  renderChecklist(); updateProgress();
+});
+
+// ── TABS ──────────────────────────────────────────────────────────
+window.switchTab = function(tab) {
+  document.getElementById("tab-form").classList.toggle("active", tab === "form");
+  document.getElementById("tab-history").classList.toggle("active", tab === "history");
+  document.getElementById("page-form").classList.toggle("hidden", tab !== "form");
+  document.getElementById("page-history").classList.toggle("hidden", tab !== "history");
+  if (tab === "history") renderHistory();
+};
+
+// ── ACESSOS ───────────────────────────────────────────────────────
+const ACESSOS = {
+  gerente: [
+    { secao:"Grupos", itens:["Grupo Comunicados","Grupo Porto Vale","Grupo Pendências","Grupo NPS","Grupo Gerentes","Grupo Sistema – Clauser"] },
+    { secao:"Sistemas e Acessos", itens:["Inadimplentes","Ololu","Click Play","Acesso NPS","Acesso ao Sys Control","Portal","Power BI","Corretor Online"] }
+  ],
+  vendedor: [
+    { secao:"Grupos", itens:["Grupo Comunicados","Grupo Porto Vale"] },
+    { secao:"Sistemas e Acessos", itens:["Ololu","COL","Portal"] }
+  ]
+};
+let currentType = "gerente";
+let checkedItems = {};
+let cachedHistory = [];
+
+window.selectType = function(type) {
+  currentType = type; checkedItems = {};
+  document.getElementById("btn-gerente").classList.toggle("active", type === "gerente");
+  document.getElementById("btn-vendedor").classList.toggle("active", type === "vendedor");
+  renderChecklist(); updateProgress();
+};
+
+function renderChecklist() {
+  const area = document.getElementById("checklist-area");
+  area.innerHTML = "";
+  ACESSOS[currentType].forEach(({ secao, itens }) => {
+    const sec = document.createElement("div"); sec.className = "checklist-section";
+    const h4 = document.createElement("h4"); h4.textContent = secao; sec.appendChild(h4);
+    const div = document.createElement("div"); div.className = "checklist-items";
+    itens.forEach(item => {
+      const key = currentType + "__" + item;
+      const el = document.createElement("div");
+      el.className = "check-item" + (checkedItems[key] ? " checked" : "");
+      el.onclick = () => toggleItem(key, el);
+      el.innerHTML = `<div class="check-box"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg></div><span class="check-label">${item}</span>`;
+      div.appendChild(el);
+    });
+    sec.appendChild(div); area.appendChild(sec);
+  });
+}
+
+function toggleItem(key, el) {
+  checkedItems[key] = !checkedItems[key];
+  el.classList.toggle("checked", checkedItems[key]);
+  updateProgress();
+}
+
+function updateProgress() {
+  const total = ACESSOS[currentType].reduce((a,s) => a + s.itens.length, 0);
+  const done = Object.values(checkedItems).filter(Boolean).length;
+  const pct = total === 0 ? 0 : Math.round((done/total)*100);
+  document.getElementById("progress-fill").style.width = pct + "%";
+  document.getElementById("progress-label").textContent = done + " / " + total;
+  document.getElementById("progress-pct").textContent = pct + "%";
+}
+
+window.clearForm = function() {
+  checkedItems = {};
+  ["nome","obs"].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+  document.getElementById("responsavel").value = "";
+  document.getElementById("data").value = new Date().toISOString().split("T")[0];
+  document.getElementById("motivo").value = "";
+  renderChecklist(); updateProgress();
+};
+
+// ── SAVE ──────────────────────────────────────────────────────────
+window.saveRecord = async function() {
+  const nome = document.getElementById("nome").value.trim();
+  const data = document.getElementById("data").value;
+  if (!nome) { showToast("Informe o nome do colaborador.", "error"); return; }
+  if (!data)  { showToast("Informe a data.", "error"); return; }
+  const total = ACESSOS[currentType].reduce((a,s) => a + s.itens.length, 0);
+  const done  = Object.values(checkedItems).filter(Boolean).length;
+  const itens = {};
+  ACESSOS[currentType].forEach(({ itens: its }) => {
+    its.forEach(item => { itens[item] = !!checkedItems[currentType + "__" + item]; });
+  });
+  const record = {
+    tipo: currentType, nome,
+    responsavel: document.getElementById("responsavel").value,
+    data, motivo: document.getElementById("motivo").value,
+    obs: document.getElementById("obs").value.trim(),
+    totalItens: total, done, itens,
+    salvo_em: new Date().toISOString(),
+    salvo_por: currentUser ? currentUser.displayName : "—"
+  };
+  const btn = document.getElementById("btn-save");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;width:13px;height:13px"></span> Salvando...`;
+  try {
+    const docRef = await addDoc(collection(db, COL), record);
+    record.id = docRef.id;
+    audit("SALVAR", `Colaborador: ${nome} | Tipo: ${currentType} | ${done}/${total} itens | Por: ${record.responsavel}`);
+    showToast("Registro salvo no Firebase ✓", "success");
+    window.clearForm();
+  } catch(e) {
+    showToast("Erro ao salvar: " + e.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salvar registro`;
+  }
+};
+
+// ── HISTORY ───────────────────────────────────────────────────────
+async function renderHistory() {
+  const list  = document.getElementById("history-list");
+  const stats = document.getElementById("history-stats");
+  list.innerHTML = '<div class="history-loading"><div class="spinner"></div> Carregando registros...</div>';
+  try {
+    const snap = await getDocs(query(collection(db, COL), orderBy("salvo_em", "desc")));
+    cachedHistory = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) {
+    list.innerHTML = `<div class="history-empty">Erro ao carregar: ${e.message}</div>`; return;
+  }
+  if (cachedHistory.length > 0) {
+    stats.style.display = "grid";
+    const total    = cachedHistory.length;
+    const gerentes = cachedHistory.filter(r => r.tipo === "gerente").length;
+    const vendeds  = cachedHistory.filter(r => r.tipo === "vendedor").length;
+    const media    = Math.round(cachedHistory.reduce((a,r) => a+(r.totalItens?r.done/r.totalItens*100:0),0)/total);
+    document.getElementById("stat-total").textContent      = total;
+    document.getElementById("stat-gerentes").textContent   = gerentes;
+    document.getElementById("stat-vendedores").textContent = vendeds;
+    document.getElementById("stat-media").textContent      = media + "%";
+    document.getElementById("tab-hist-count").textContent  = total;
+    document.getElementById("history-count-label").textContent = total + " registro" + (total!==1?"s":"") + " encontrado" + (total!==1?"s":"");
+  } else {
+    stats.style.display = "none";
+    document.getElementById("tab-hist-count").textContent = "0";
+    document.getElementById("history-count-label").textContent = "";
+  }
+  if (cachedHistory.length === 0) { list.innerHTML = '<div class="history-empty">Nenhum registro salvo ainda.</div>'; return; }
+  list.innerHTML = cachedHistory.map(r => {
+    const pct     = r.totalItens === 0 ? 0 : Math.round((r.done/r.totalItens)*100);
+    const dataStr = r.data ? String(r.data) : "";
+    const dataFmt = dataStr ? new Date(dataStr + "T12:00:00").toLocaleDateString("pt-BR") : "—";
+    const ok      = pct === 100;
+    const continueBtn = !ok
+      ? `<button class="btn-continue" onclick="event.stopPropagation();continueRecord('${r.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>Continuar</button>`
+      : `<span style="font-size:10px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Completo</span>`;
+    return `<div class="history-card" onclick="openModal('${r.id}')">
+      <span class="history-badge badge-${r.tipo}">${r.tipo}</span>
+      <div class="history-info">
+        <div class="history-name">${r.nome}</div>
+        <div class="history-meta">${dataFmt}${r.motivo?" · "+r.motivo:""}${r.responsavel?" · "+r.responsavel:""}</div>
+      </div>
+      <div class="history-right">
+        <div class="history-progress-bar-wrap">
+          <div class="history-progress-mini"><div class="history-progress-mini-fill ${ok?"fill-ok":"fill-partial"}" style="width:${pct}%"></div></div>
+          <div class="history-pct-sub">${r.done}/${r.totalItens} itens</div>
+        </div>
+        <div class="history-pct ${ok?"pct-ok":"pct-partial"}">${pct}%</div>
+        ${continueBtn}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+window.clearHistory = async function() {
+  if (!confirm("Apagar TODOS os registros do Firebase? Não pode ser desfeito.")) return;
+  try {
+    const snap = await getDocs(collection(db, COL));
+    await Promise.all(snap.docs.map(d => deleteDoc(doc(db, COL, d.id))));
+    audit("LIMPAR HISTÓRICO", "Todos os registros foram apagados");
+    cachedHistory = []; renderHistory(); showToast("Histórico apagado.", "success");
+  } catch(e) { showToast("Erro: " + e.message, "error"); }
+};
+
+// ── MODAL ─────────────────────────────────────────────────────────
+window.openModal = function(id) {
+  const r = cachedHistory.find(x => x.id === id); if (!r) return;
+  const dataStr = r.data ? String(r.data) : "";
+  const dataFmt = dataStr ? new Date(dataStr + "T12:00:00").toLocaleDateString("pt-BR") : "—";
+  const pct = r.totalItens === 0 ? 0 : Math.round((r.done/r.totalItens)*100);
+  document.getElementById("modal-title").textContent = r.nome;
+  const itemsHtml = (ACESSOS[r.tipo]||[]).map(({ secao, itens }) => `
+    <div class="modal-section-title">${secao}</div>
+    ${itens.map(item => `<div class="modal-item">
+      <span class="dot ${r.itens[item]?"dot-ok":"dot-no"}"></span>
+      <span style="color:${r.itens[item]?"var(--text)":"var(--text3)"};${r.itens[item]?"":"text-decoration:line-through"}">${item}</span>
+    </div>`).join("")}`).join("");
+  document.getElementById("modal-body").innerHTML = `
+    <div class="modal-meta-grid">
+      <div class="modal-meta-item"><label>Tipo</label><span style="text-transform:capitalize">${r.tipo}</span></div>
+      <div class="modal-meta-item"><label>Data</label><span>${dataFmt}</span></div>
+      <div class="modal-meta-item"><label>Preenchido por</label><span>${r.responsavel||"—"}</span></div>
+      <div class="modal-meta-item"><label>Motivo</label><span>${r.motivo||"—"}</span></div>
+      <div class="modal-meta-item" style="grid-column:span 2"><label>Conclusão</label>
+        <span style="color:${pct===100?"var(--green)":"var(--amber)"};font-weight:700;font-size:15px">${pct}%
+          <small style="font-size:11px;font-weight:400;color:var(--text3)"> (${r.done} de ${r.totalItens} itens)</small>
+        </span>
+      </div>
+      ${r.obs?`<div class="modal-meta-item" style="grid-column:span 2"><label>Observações</label><span>${r.obs}</span></div>`:""}
+      ${r.salvo_por?`<div class="modal-meta-item" style="grid-column:span 2"><label>Salvo por</label><span>${r.salvo_por}</span></div>`:""}
+    </div>${itemsHtml}`;
+  document.getElementById("modal-actions").innerHTML = `
+    <button class="btn-modal-image" onclick="generateImage('${r.id}')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Gerar imagem para envio
+    </button>`;
+  document.getElementById("modal-overlay").classList.remove("hidden");
+};
+
+window.closeModal = function() { document.getElementById("modal-overlay").classList.add("hidden"); };
+
+// ── CONTINUAR ─────────────────────────────────────────────────────
+window.continueRecord = function(id) {
+  const r = cachedHistory.find(x => x.id === id); if (!r) return;
+  currentType = r.tipo;
+  document.getElementById("btn-gerente").classList.toggle("active", r.tipo === "gerente");
+  document.getElementById("btn-vendedor").classList.toggle("active", r.tipo === "vendedor");
+  checkedItems = {};
+  (ACESSOS[r.tipo]||[]).forEach(({ itens }) => {
+    itens.forEach(item => { checkedItems[r.tipo + "__" + item] = !!r.itens[item]; });
+  });
+  document.getElementById("nome").value   = r.nome || "";
+  document.getElementById("data").value   = r.data ? String(r.data).slice(0,10) : new Date().toISOString().split("T")[0];
+  document.getElementById("motivo").value = r.motivo || "";
+  document.getElementById("obs").value    = r.obs || "";
+  const respSel = document.getElementById("responsavel");
+  const vals = Array.from(respSel.options).map(o => o.value);
+  respSel.value = vals.includes(r.responsavel) ? r.responsavel : "";
+  renderChecklist(); updateProgress();
+  window.switchTab("form");
+  audit("CONTINUAR", `Carregou registro de ${r.nome} para continuar preenchimento`);
+  showToast("Registro carregado — continue o preenchimento ✓", "success");
+};
+
+// ── GERAR IMAGEM ──────────────────────────────────────────────────
+function buildPrintFrame(r) {
+  const pct = r.totalItens===0 ? 0 : Math.round((r.done/r.totalItens)*100);
+  const dataStr = r.data ? String(r.data) : "";
+  const dataFmt = dataStr ? new Date(dataStr+"T12:00:00").toLocaleDateString("pt-BR") : "—";
+  const barColor = pct===100 ? "#1e7a4a" : "#c47a1a";
+  const sectionsHtml = (ACESSOS[r.tipo]||[]).map(({ secao, itens }) => `
+    <div>
+      <div class="pf-section-title">${secao}</div>
+      ${itens.map(item => `<div class="pf-item">
+        <div class="pf-dot" style="background:${r.itens[item]?"#1e7a4a":"#9a9890"}"></div>
+        <span style="color:${r.itens[item]?"#1a1916":"#9a9890"};${r.itens[item]?"":"text-decoration:line-through"}">${item}</span>
+      </div>`).join("")}
+    </div>`).join("");
+  const obsHtml = r.obs ? `<div class="pf-obs"><strong>⚠ Observações</strong>${r.obs}</div>` : "";
+  return `
+    <div class="pf-header">
+      <div class="pf-logo">
+        <div class="pf-logo-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+        <div class="pf-brand">Porto Vale<small>Gestão de Acessos</small></div>
+      </div>
+      <div class="pf-doc-info">
+        <div class="pf-doc-title">Checklist de ${r.tipo.charAt(0).toUpperCase()+r.tipo.slice(1)}</div>
+        <div class="pf-doc-date">Emitido em ${new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})}</div>
+      </div>
+    </div>
+    <div class="pf-meta-grid">
+      <div class="pf-meta-item"><label>Colaborador</label><span>${r.nome}</span></div>
+      <div class="pf-meta-item"><label>Preenchido por</label><span>${r.responsavel||"—"}</span></div>
+      <div class="pf-meta-item"><label>Data</label><span>${dataFmt}</span></div>
+      <div class="pf-meta-item"><label>Motivo</label><span>${r.motivo||"—"}</span></div>
+    </div>
+    <div class="pf-progress-row">
+      <div class="pf-progress-bar"><div class="pf-progress-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="pf-progress-txt" style="color:${barColor}">${pct}% concluído &nbsp;<span style="color:#9a9890;font-size:11px;font-weight:400">(${r.done} de ${r.totalItens} itens)</span></div>
+    </div>
+    <div class="pf-sections-grid">${sectionsHtml}</div>
+    ${obsHtml}
+    <div class="pf-footer">
+      <span>Porto Vale · Checklist de Acessos · Salvo por: ${r.salvo_por||"—"}</span>
+      <span class="pf-status-badge ${pct===100?"pf-ok":"pf-partial"}">${pct===100?"✓ Completo":"⚠ Incompleto"}</span>
+    </div>`;
+}
+
+window.generateImage = async function(recordId) {
+  let r;
+  if (recordId !== null) {
+    r = cachedHistory.find(x => x.id === recordId);
+  } else {
+    const nome = document.getElementById("nome").value.trim();
+    if (!nome) { showToast("Preencha pelo menos o nome do colaborador.", "error"); return; }
+    const total = ACESSOS[currentType].reduce((a,s) => a+s.itens.length, 0);
+    const done  = Object.values(checkedItems).filter(Boolean).length;
+    const itens = {};
+    ACESSOS[currentType].forEach(({ itens: its }) => {
+      its.forEach(item => { itens[item] = !!checkedItems[currentType+"__"+item]; });
+    });
+    r = { tipo:currentType, nome, responsavel:document.getElementById("responsavel").value,
+          data:document.getElementById("data").value, motivo:document.getElementById("motivo").value,
+          obs:document.getElementById("obs").value.trim(), totalItens:total, done, itens,
+          salvo_por: currentUser ? currentUser.displayName : "—" };
+  }
+  if (!r) return;
+  const frame = document.getElementById("print-frame");
+  frame.innerHTML = buildPrintFrame(r);
+  showToast("Gerando imagem...");
+  await new Promise(res => setTimeout(res, 120));
+  try {
+    const canvas = await html2canvas(frame, { scale:2, useCORS:true, backgroundColor:"#ffffff" });
+    const link = document.createElement("a");
+    const safeName = r.nome.replace(/[^a-z0-9]/gi,"_").toLowerCase();
+    link.download = `checklist_${r.tipo}_${safeName}_${r.data||"sem-data"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    audit("GERAR IMAGEM", `Imagem gerada para ${r.nome}`);
+    showToast("Imagem salva ✓", "success");
+  } catch(e) { showToast("Erro ao gerar imagem: " + e.message, "error"); }
+  frame.innerHTML = "";
+};
+
+// ── EXPORT XLSX ───────────────────────────────────────────────────
+window.exportXLSX = function() {
+  if (cachedHistory.length === 0) { showToast("Nenhum registro para exportar.", "error"); return; }
+  const wb = XLSX.utils.book_new();
+  const allItems    = [...ACESSOS.gerente.flatMap(s=>s.itens), ...ACESSOS.vendedor.flatMap(s=>s.itens)];
+  const uniqueItems = [...new Set(allItems)];
+  const headers = ["Tipo","Colaborador","Preenchido por","Data","Motivo","Observações","% Concluído","Itens OK","Total Itens","Salvo por","Salvo em",...uniqueItems];
+  const rows = cachedHistory.map(r => {
+    const dataStr = r.data ? String(r.data) : "";
+    const dataFmt = dataStr ? new Date(dataStr+"T12:00:00").toLocaleDateString("pt-BR") : "";
+    const pct = r.totalItens===0 ? 0 : Math.round((r.done/r.totalItens)*100);
+    return [
+      r.tipo.charAt(0).toUpperCase()+r.tipo.slice(1), r.nome, r.responsavel||"", dataFmt,
+      r.motivo||"", r.obs||"", pct/100, r.done, r.totalItens, r.salvo_por||"", r.salvo_em||"",
+      ...uniqueItems.map(item => r.itens[item]===undefined?"N/A":r.itens[item]?"✓":"✗")
+    ];
+  });
+  const ws = XLSX.utils.aoa_to_sheet([headers,...rows]);
+  ws["!cols"] = [{wch:12},{wch:24},{wch:22},{wch:12},{wch:16},{wch:30},{wch:13},{wch:10},{wch:11},{wch:20},{wch:20},...uniqueItems.map(()=>({wch:22}))];
+  ws["!freeze"] = { xSplit:0, ySplit:1 };
+  rows.forEach((_,i) => { const c = XLSX.utils.encode_cell({r:i+1,c:6}); if(ws[c]) ws[c].z="0%"; });
+  XLSX.utils.book_append_sheet(wb, ws, "Registros");
+  const total    = cachedHistory.length;
+  const gerentes = cachedHistory.filter(r=>r.tipo==="gerente").length;
+  const vendeds  = cachedHistory.filter(r=>r.tipo==="vendedor").length;
+  const compls   = cachedHistory.filter(r=>r.totalItens&&r.done===r.totalItens).length;
+  const media    = total ? Math.round(cachedHistory.reduce((a,r)=>a+(r.totalItens?r.done/r.totalItens*100:0),0)/total) : 0;
+  const wsSumm = XLSX.utils.aoa_to_sheet([
+    ["RELATÓRIO — PORTO VALE",""],["Checklist de Acessos",""],["",""],
+    ["TOTAIS",""],["Total de registros",total],["Gerentes",gerentes],["Vendedores",vendeds],["",""],
+    ["CONCLUSÃO",""],["Média de conclusão",media/100],["100% completos",compls],["Incompletos",total-compls],["",""],
+    ["GERADO EM",""],["Data/Hora",new Date().toLocaleString("pt-BR")],
+    ["Usuário",currentUser?currentUser.displayName:"Sistema"]
+  ]);
+  wsSumm["!cols"] = [{wch:32},{wch:18}];
+  if (wsSumm["B10"]) wsSumm["B10"].z = "0%";
+  XLSX.utils.book_append_sheet(wb, wsSumm, "Resumo");
+  ["gerente","vendedor"].forEach(tipo => {
+    const recs = cachedHistory.filter(r=>r.tipo===tipo);
+    if (!recs.length) return;
+    const its  = ACESSOS[tipo].flatMap(s=>s.itens);
+    const hdr  = ["Colaborador","Preenchido por","Data","Motivo","% Concluído",...its];
+    const rws  = recs.map(r => {
+      const dataStr = r.data?String(r.data):"";
+      const dataFmt = dataStr?new Date(dataStr+"T12:00:00").toLocaleDateString("pt-BR"):"";
+      const pct = r.totalItens===0?0:Math.round((r.done/r.totalItens)*100);
+      return [r.nome,r.responsavel||"",dataFmt,r.motivo||"",pct/100,...its.map(i=>r.itens[i]===undefined?"N/A":r.itens[i]?"✓":"✗")];
+    });
+    const ws2 = XLSX.utils.aoa_to_sheet([hdr,...rws]);
+    ws2["!cols"] = [{wch:24},{wch:22},{wch:12},{wch:16},{wch:13},...its.map(()=>({wch:22}))];
+    ws2["!freeze"] = {xSplit:0,ySplit:1};
+    rws.forEach((_,i)=>{ const c=XLSX.utils.encode_cell({r:i+1,c:4}); if(ws2[c]) ws2[c].z="0%"; });
+    XLSX.utils.book_append_sheet(wb, ws2, tipo.charAt(0).toUpperCase()+tipo.slice(1)+"s");
+  });
+  const stamp = new Date().toISOString().slice(0,10).replace(/-/g,"");
+  XLSX.writeFile(wb, `checklist_acessos_${stamp}.xlsx`);
+  audit("EXPORTAR XLSX", `Exportação realizada com ${cachedHistory.length} registros`);
+  showToast("Exportado com sucesso ✓", "success");
+};
+
+// ── TOAST ─────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "toast"+(type?" "+type:"");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add("hidden"), 3200);
+}
+</script>
 </body>
 </html>
