@@ -7,6 +7,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Firebase compat (funciona sem type=module) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -180,6 +184,21 @@
     .history-pct-sub { font-size:10px; color:var(--text3); text-align:right; font-family:var(--mono); }
     .btn-continue { display:flex; align-items:center; gap:6px; flex-shrink:0; background:var(--amber-lt); border:1.5px solid rgba(196,122,26,0.3); color:var(--amber); font-family:var(--font); font-size:11px; font-weight:600; padding:6px 12px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.18s; white-space:nowrap; }
     .btn-continue:hover { background:var(--amber); color:#fff; border-color:var(--amber); }
+    .btn-delete-record { display:flex; align-items:center; justify-content:center; flex-shrink:0; width:30px; height:30px; background:transparent; border:1px solid rgba(192,57,43,0.2); border-radius:var(--radius-sm); color:var(--text3); cursor:pointer; transition:all 0.18s; }
+    .btn-delete-record:hover { background:var(--red-lt); border-color:rgba(192,57,43,0.5); color:var(--red); }
+    .btn-audit { display:flex; align-items:center; gap:6px; background:var(--accent-lt); border:1.5px solid rgba(0,120,200,0.25); color:var(--accent2); font-family:var(--font); font-size:11px; font-weight:600; padding:6px 12px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.18s; white-space:nowrap; }
+    .btn-audit:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .editing-banner { display:none; align-items:center; gap:12px; background:var(--amber-lt); border:1.5px solid rgba(196,122,26,0.35); border-radius:var(--radius-sm); padding:10px 16px; margin-bottom:16px; font-size:13px; color:var(--amber); font-weight:500; }
+    .editing-banner.show { display:flex; }
+    .editing-banner-name { font-weight:700; }
+    .btn-cancel-edit { margin-left:auto; background:none; border:1px solid rgba(196,122,26,0.4); color:var(--amber); font-family:var(--font); font-size:11px; font-weight:600; padding:4px 10px; border-radius:6px; cursor:pointer; }
+    .btn-cancel-edit:hover { background:var(--amber); color:#fff; }
+    .audit-entry { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:12px; }
+    .audit-entry:last-child { border-bottom:none; }
+    .audit-dot { width:8px; height:8px; border-radius:50%; background:var(--accent3); flex-shrink:0; margin-top:4px; }
+    .audit-time { color:var(--text3); font-family:var(--mono); white-space:nowrap; font-size:11px; }
+    .audit-user { font-weight:600; color:var(--accent2); }
+    .audit-detail { color:var(--text2); }
 
     /* MODAL */
     .modal-overlay { position:fixed; inset:0; z-index:200; background:rgba(26,25,22,0.55); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; }
@@ -326,6 +345,11 @@
         </button>
       </div>
       <div class="form-card">
+        <div id="editing-banner" class="editing-banner">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editando: <span class="editing-banner-name" id="editing-banner-name"></span>
+          <button class="btn-cancel-edit" onclick="cancelEdit()">✕ Cancelar edição</button>
+        </div>
         <div class="form-meta">
           <div class="field"><label>Nome do Colaborador</label><input type="text" id="nome" placeholder="Ex: João Silva" autocomplete="off" /></div>
           <div class="field"><label>Preenchido por</label>
@@ -415,11 +439,7 @@
 <div id="print-frame" aria-hidden="true"></div>
 <div id="toast" class="toast hidden"></div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
+<script>
 // ── CONFIG ────────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyAWyvmJRevkAV2Eux2dSYGP5hFq-iYuXd4",
@@ -429,11 +449,22 @@ const firebaseConfig = {
   messagingSenderId: "583742070100",
   appId: "1:583742070100:web:74653e2ea6e08008673cc1"
 };
-const app  = initializeApp(firebaseConfig);
-const db   = getFirestore(app);
-const auth = getAuth(app);
+firebase.initializeApp(firebaseConfig);
+const db   = firebase.firestore();
+const auth = firebase.auth();
 const COL       = "checklist_registros";
 const COL_AUDIT = "checklist_auditoria";
+
+// helpers compat → mesma API que antes
+const collection  = (d, c)       => d.collection(c);
+const addDoc      = (ref, data)   => ref.add(data);
+const getDocs     = (ref)         => ref.get();
+const doc         = (d, c, id)    => d.collection(c).doc(id);
+const deleteDoc   = (ref)         => ref.delete();
+const updateDoc   = (ref, data)   => ref.update(data);
+const query       = (ref, ...ops) => ops.reduce((r, op) => op(r), ref);
+const orderBy     = (f, d="asc")  => r => r.orderBy(f, d);
+const limit       = (n)           => r => r.limit(n);
 
 // ── AUTH ──────────────────────────────────────────────────────────
 const DISPLAY_NAMES = {
@@ -457,7 +488,7 @@ window.doLogin = async function() {
   const email = raw.includes("@") ? raw : raw + "@portovale.com";
   setLoginLoading(true);
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    await auth.signInWithEmailAndPassword(email, pass);
   } catch(e) {
     setLoginLoading(false);
     errEl.textContent = "Usuário ou senha incorretos.";
@@ -467,10 +498,10 @@ window.doLogin = async function() {
 
 window.doLogout = async function() {
   if (currentUser) audit("LOGOUT", `Usuário ${currentUser.displayName} saiu`);
-  await signOut(auth);
+  await auth.signOut();
 };
 
-onAuthStateChanged(auth, user => {
+auth.onAuthStateChanged(user => {
   if (user) {
     const name = DISPLAY_NAMES[user.email] || user.displayName || user.email;
     currentUser = { displayName: name, email: user.email };
@@ -505,13 +536,11 @@ async function initFirebaseStatus() {
 }
 
 // ── AUDITORIA ─────────────────────────────────────────────────────
-async function audit(acao, detalhe) {
+async function audit(acao, detalhe, registro_id) {
   try {
-    await addDoc(collection(db, COL_AUDIT), {
-      data_hora: new Date().toISOString(),
-      usuario: currentUser ? currentUser.displayName : "Sistema",
-      acao, detalhe
-    });
+    const entry = { data_hora: new Date().toISOString(), usuario: currentUser ? currentUser.displayName : "Sistema", acao, detalhe };
+    if (registro_id) entry.registro_id = registro_id;
+    await addDoc(collection(db, COL_AUDIT), entry);
   } catch(e) { /* silencioso */ }
 }
 
@@ -529,7 +558,6 @@ window.switchTab = function(tab) {
   document.getElementById("tab-form").classList.toggle("active", tab === "form");
   document.getElementById("tab-history").classList.toggle("active", tab === "history");
   document.getElementById("page-form").classList.toggle("hidden", tab !== "form");
-
   document.getElementById("page-history").classList.toggle("hidden", tab !== "history");
   if (tab === "history") renderHistory();
 };
@@ -538,11 +566,11 @@ window.switchTab = function(tab) {
 const ACESSOS = {
   gerente: [
     { secao:"Grupos", itens:["Grupo Comunicados","Grupo Porto Vale","Grupo Pendências","Grupo NPS","Grupo Gerentes","Grupo Sistema – Clauser"] },
-    { secao:"Sistemas e Acessos", itens:["Inadimplentes","Ololu","Click Play","Acesso NPS","Acesso ao Sys Control","Power BI","Corretor Online"] }
+    { secao:"Sistemas e Acessos", itens:["Inadimplentes","Ololu","Click Play","Acesso NPS","Acesso ao Sys Control","Portal","Power BI","Corretor Online","Blip"] }
   ],
   vendedor: [
     { secao:"Grupos", itens:["Grupo Comunicados","Grupo Porto Vale"] },
-    { secao:"Sistemas e Acessos", itens:["Ololu","COL"] }
+    { secao:"Sistemas e Acessos", itens:["Ololu","COL","Portal","Blip"] }
   ]
 };
 let currentType = "gerente";
@@ -592,6 +620,11 @@ function updateProgress() {
 
 window.clearForm = function() {
   checkedItems = {};
+  editingRecordId = null;
+  document.getElementById("editing-banner").classList.remove("show");
+  const btnSave = document.getElementById("btn-save");
+  btnSave.style.background = "";
+  btnSave.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salvar registro`;
   ["nome","obs"].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
   document.getElementById("responsavel").value = "";
   document.getElementById("data").value = new Date().toISOString().split("T")[0];
@@ -599,7 +632,7 @@ window.clearForm = function() {
   renderChecklist(); updateProgress();
 };
 
-// ── SAVE ──────────────────────────────────────────────────────────
+// ── SAVE / UPDATE ─────────────────────────────────────────────────
 window.saveRecord = async function() {
   const nome = document.getElementById("nome").value.trim();
   const data = document.getElementById("data").value;
@@ -611,29 +644,71 @@ window.saveRecord = async function() {
   ACESSOS[currentType].forEach(({ itens: its }) => {
     its.forEach(item => { itens[item] = !!checkedItems[currentType + "__" + item]; });
   });
-  const record = {
-    tipo: currentType, nome,
-    responsavel: document.getElementById("responsavel").value,
-    data, motivo: document.getElementById("motivo").value,
-    obs: document.getElementById("obs").value.trim(),
-    totalItens: total, done, itens,
-    salvo_em: new Date().toISOString(),
-    salvo_por: currentUser ? currentUser.displayName : "—"
-  };
+  const responsavel = document.getElementById("responsavel").value;
   const btn = document.getElementById("btn-save");
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;width:13px;height:13px"></span> Salvando...`;
   try {
-    const docRef = await addDoc(collection(db, COL), record);
-    record.id = docRef.id;
-    audit("SALVAR", `Colaborador: ${nome} | Tipo: ${currentType} | ${done}/${total} itens | Por: ${record.responsavel}`);
-    showToast("Registro salvo no Firebase ✓", "success");
-    window.clearForm();
+    if (editingRecordId) {
+      // ── ATUALIZAR registro existente ──
+      const oldRecord = cachedHistory.find(x => x.id === editingRecordId);
+      const oldDone = oldRecord?.done ?? 0;
+      const updates = {
+        tipo: currentType, nome, responsavel, data,
+        motivo: document.getElementById("motivo").value,
+        obs: document.getElementById("obs").value.trim(),
+        totalItens: total, done, itens,
+        atualizado_em: new Date().toISOString(),
+        atualizado_por: currentUser?.displayName ?? "—"
+      };
+      await updateDoc(doc(db, COL, editingRecordId), updates);
+      // Log de auditoria detalhado
+      const novosItens = Object.entries(itens)
+        .filter(([k,v]) => v && !oldRecord?.itens?.[k])
+        .map(([k]) => k);
+      const removidosItens = Object.entries(itens)
+        .filter(([k,v]) => !v && oldRecord?.itens?.[k])
+        .map(([k]) => k);
+      let detalhe = `Editado por ${responsavel||currentUser?.displayName} | ${done}/${total} itens (era ${oldDone}/${total})`;
+      if (novosItens.length) detalhe += ` | ✓ Marcados: ${novosItens.join(", ")}`;
+      if (removidosItens.length) detalhe += ` | ✗ Desmarcados: ${removidosItens.join(", ")}`;
+      await addDoc(collection(db, COL_AUDIT), {
+        data_hora: new Date().toISOString(),
+        usuario: currentUser?.displayName ?? "—",
+        acao: "EDITAR",
+        detalhe,
+        registro_id: editingRecordId
+      });
+      showToast("Registro atualizado ✓", "success");
+      window.cancelEdit();
+    } else {
+      // ── NOVO registro ──
+      const record = {
+        tipo: currentType, nome, responsavel, data,
+        motivo: document.getElementById("motivo").value,
+        obs: document.getElementById("obs").value.trim(),
+        totalItens: total, done, itens,
+        salvo_em: new Date().toISOString(),
+        salvo_por: currentUser?.displayName ?? "—"
+      };
+      const docRef = await addDoc(collection(db, COL), record);
+      await addDoc(collection(db, COL_AUDIT), {
+        data_hora: new Date().toISOString(),
+        usuario: currentUser?.displayName ?? "—",
+        acao: "SALVAR",
+        detalhe: `Colaborador: ${nome} | Tipo: ${currentType} | ${done}/${total} itens | Por: ${responsavel}`,
+        registro_id: docRef.id
+      });
+      showToast("Registro salvo no Firebase ✓", "success");
+      window.clearForm();
+    }
   } catch(e) {
     showToast("Erro ao salvar: " + e.message, "error");
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salvar registro`;
+    if (!editingRecordId) {
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salvar registro`;
+    }
   }
 };
 
@@ -687,6 +762,9 @@ async function renderHistory() {
         </div>
         <div class="history-pct ${ok?"pct-ok":"pct-partial"}">${pct}%</div>
         ${continueBtn}
+        <button class="btn-delete-record" title="Excluir registro" onclick="event.stopPropagation();deleteRecord('${r.id}','${r.nome.replace(/'/g,"\\'")}')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
       </div>
     </div>`;
   }).join("");
@@ -730,18 +808,25 @@ window.openModal = function(id) {
       ${r.salvo_por?`<div class="modal-meta-item" style="grid-column:span 2"><label>Salvo por</label><span>${r.salvo_por}</span></div>`:""}
     </div>${itemsHtml}`;
   document.getElementById("modal-actions").innerHTML = `
+    <button class="btn-audit" onclick="openAuditModal('${r.id}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Ver histórico de edições
+    </button>
     <button class="btn-modal-image" onclick="generateImage('${r.id}')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-      Gerar imagem para envio
+      Gerar imagem
     </button>`;
   document.getElementById("modal-overlay").classList.remove("hidden");
 };
 
 window.closeModal = function() { document.getElementById("modal-overlay").classList.add("hidden"); };
 
-// ── CONTINUAR ─────────────────────────────────────────────────────
+// ── EDIÇÃO DE REGISTRO ────────────────────────────────────────────
+let editingRecordId = null;
+
 window.continueRecord = function(id) {
   const r = cachedHistory.find(x => x.id === id); if (!r) return;
+  editingRecordId = id;
   currentType = r.tipo;
   document.getElementById("btn-gerente").classList.toggle("active", r.tipo === "gerente");
   document.getElementById("btn-vendedor").classList.toggle("active", r.tipo === "vendedor");
@@ -757,9 +842,72 @@ window.continueRecord = function(id) {
   const vals = Array.from(respSel.options).map(o => o.value);
   respSel.value = vals.includes(r.responsavel) ? r.responsavel : "";
   renderChecklist(); updateProgress();
+  // Mostra banner de edição e muda botão salvar
+  const banner = document.getElementById("editing-banner");
+  document.getElementById("editing-banner-name").textContent = r.nome;
+  banner.classList.add("show");
+  const btnSave = document.getElementById("btn-save");
+  btnSave.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salvar alterações`;
+  btnSave.style.background = "var(--amber)";
   window.switchTab("form");
-  audit("CONTINUAR", `Carregou registro de ${r.nome} para continuar preenchimento`);
-  showToast("Registro carregado — continue o preenchimento ✓", "success");
+  showToast(`Editando registro de ${r.nome} ✓`, "success");
+};
+
+window.cancelEdit = function() {
+  editingRecordId = null;
+  document.getElementById("editing-banner").classList.remove("show");
+  const btnSave = document.getElementById("btn-save");
+  btnSave.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salvar registro`;
+  btnSave.style.background = "";
+  window.clearForm();
+};
+
+// ── DELETE REGISTRO ───────────────────────────────────────────────
+window.deleteRecord = async function(id, nome) {
+  if (!confirm(`Excluir o registro de "${nome}"?\nEsta ação não pode ser desfeita.`)) return;
+  try {
+    await deleteDoc(doc(db, COL, id));
+    audit("EXCLUIR", `Registro de ${nome} excluído por ${currentUser?.displayName}`);
+    cachedHistory = cachedHistory.filter(x => x.id !== id);
+    renderHistory();
+    showToast(`Registro de ${nome} excluído.`, "success");
+  } catch(e) { showToast("Erro ao excluir: " + e.message, "error"); }
+};
+
+// ── AUDITORIA DO REGISTRO ─────────────────────────────────────────
+window.openAuditModal = async function(recordId) {
+  const r = cachedHistory.find(x => x.id === recordId); if (!r) return;
+  // Busca logs de auditoria deste registro
+  const auditSnap = await getDocs(query(collection(db, COL_AUDIT), orderBy("data_hora", "desc")));
+  const logs = auditSnap.docs.map(d => d.data()).filter(l =>
+    l.detalhe && (l.detalhe.includes(r.nome) || l.registro_id === recordId)
+  );
+  const logsHtml = logs.length === 0
+    ? `<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">Nenhum log encontrado para este registro.</div>`
+    : logs.map(l => {
+        const dt = new Date(l.data_hora);
+        const dtFmt = dt.toLocaleDateString("pt-BR") + " " + dt.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+        return `<div class="audit-entry">
+          <div class="audit-dot"></div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+              <span class="audit-user">${l.usuario||"—"}</span>
+              <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--accent-lt);color:var(--accent2)">${l.acao}</span>
+              <span class="audit-time">${dtFmt}</span>
+            </div>
+            <div class="audit-detail">${l.detalhe||""}</div>
+          </div>
+        </div>`;
+      }).join("");
+  // Reutiliza o modal existente
+  document.getElementById("modal-title").textContent = `Histórico de edições — ${r.nome}`;
+  document.getElementById("modal-body").innerHTML = `
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px">${logs.length} evento${logs.length!==1?"s":""} registrado${logs.length!==1?"s":""}</div>
+    ${logsHtml}`;
+  document.getElementById("modal-actions").innerHTML = `
+    <button class="btn-modal-image" onclick="openModal('${recordId}')">
+      ← Voltar ao registro
+    </button>`;
 };
 
 // ── GERAR IMAGEM ──────────────────────────────────────────────────
